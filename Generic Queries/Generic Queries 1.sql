@@ -47,13 +47,58 @@ end loop;
 
 end;
 ---------------------------------------------------------------------------------------------------------
-
+--Query to get XML attributes related to cell names on UI, BV IDs, per Product ID
+with xsa_data as
+ (select xsa.xml_schema_attribute_id,
+         xsa.xml_schema_object_id,
+         xso.xml_object_type_id as object_type_id,
+         pkg_os_object_type.fn_object_type_name_get(xso.xml_object_type_id, 1, 1) as object_type_name,
+         xso.xml_schema_object_tag as xml_object_type_tag_name,
+         xsa.attribute_logical_data_type_id as data_type,
+         xsa.attribute_tag as tag,
+         xsa.attribute_bv_path as bv_path,
+         xsa.attribute_skip_tf as skip_tf,
+         xsa.attribute_list_id as list_id,
+         xsa.xml_schema_id,
+         xsa.xml_schema_version_id,
+         xsa.inclusion_rule_id,
+         priv_api.pkg_os_bv.fn_bv_path_bv_get(xsa.attribute_bv_path) as business_variable_id
+    from priv_md.xml_schema_attribute xsa
+    left join priv_md.xml_schema_object xso
+      on xso.xml_schema_object_id = xsa.xml_schema_object_id
+   where xsa.xml_schema_id = 52537), --PolicyDWC XML Schema ID
+plc_data as
+ (select priv_api.pkg_os_bv.fn_bv_path_bv_get(plc.cell_business_variable_path) as business_variable_id,
+         max(plc.b_cell_label) as cell_label_name
+    from priv_md.page_layout_cell plc
+   where plc.pd_product_id = 71533 --Domestic Workers Comp
+   group by priv_api.pkg_os_bv.fn_bv_path_bv_get(plc.cell_business_variable_path))
+select xsa.xml_schema_attribute_id,
+       xsa.xml_schema_object_id,
+       xsa.object_type_id,
+       xsa.object_type_name,
+       xsa.xml_object_type_tag_name,
+       xsa.data_type,
+       xsa.tag,
+       xsa.bv_path,
+       xsa.business_variable_id,
+       plc.cell_label_name,
+       xsa.skip_tf,
+       xsa.list_id,
+       xsa.xml_schema_id,
+       xsa.xml_schema_version_id,
+       xsa.inclusion_rule_id
+  from xsa_data xsa
+  left join plc_data plc
+    on plc.business_variable_id = xsa.business_variable_id
+ order by xsa.xml_schema_attribute_id;
+---------------------------------------------------------------------------------------------------------
+--Renewal ReRate view
 select * from priv_st.object o where o.object_id = 746199132599
     select count(*)
    -- into v_count
     from policy_renewal_rerate_vw v
     where v.policy_image_id = 123232;
-
 
 --view example
 select * from POLICY_RENEWAL_RERATE_VW
@@ -73,7 +118,7 @@ and (select count(1)
      where parent_object_id = dtx.policy_image_id
      and UW_TRIGGER_RELEVANT = 1
      and OVERRIDDEN = 2) = 0
-
+---------------------------------------------------------------------------------------------------------
 select * from priv_md.tr_object_bv_transform tr where tr.tr_object_bv_transform_id = 14150437
 
 select * from ODS_MGU_LOCATION_COVERAGE where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
