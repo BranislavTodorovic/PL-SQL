@@ -47,6 +47,21 @@ end loop;
 
 end;
 ---------------------------------------------------------------------------------------------------------
+--   Name: Bran Todorovic
+--   Date: 05/29/2026
+--   Project: Production Support
+--   Rally ID: DE108896 - PURE Online Error
+--	 Comment: Updating policy expiration date
+
+--HOT FIX script example
+declare
+v_dm char(1) := 'T';
+begin
+priv_api.pkg_os_object_io.sp_object_bv_set(1, 1, 739793584009, 499, to_char( to_date ('20270214000100','YYYYMMDDHH24MISS'), 'YYYYMMDDHH24MISS') ); -- expiration date
+priv_api.pkg_os_datamart.sp_datamart_update_row(1, 1, 739793584009, v_dm); 
+end;
+/
+---------------------------------------------------------------------------------------------------------
 --Query to get XML attributes related to cell names on UI, BV IDs, per Product ID
 with xsa_data as
  (select xsa.xml_schema_attribute_id,
@@ -119,6 +134,7 @@ and (select count(1)
      and UW_TRIGGER_RELEVANT = 1
      and OVERRIDDEN = 2) = 0
 ---------------------------------------------------------------------------------------------------------
+
 select * from priv_md.tr_object_bv_transform tr where tr.tr_object_bv_transform_id = 14150437
 
 select * from ODS_MGU_LOCATION_COVERAGE where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
@@ -129,11 +145,29 @@ select distinct(AI_NAME) from priv_st.action_integration_log
 select * from priv_st.action_integration_log where POLICY_TRANSACTION_POLICY_ID = 745929171986 order by AI_LOG_TIMESTAMP desc
 
 --------------------------------------------------------------------------------
+
+select * /* PRIV_SERVICE_PERF_LOG_ID,operation_label,session_user_name, (response_end_Date - request_start_Date) * 24 * 3600 as total_time_seconds,trim((request_end_Date - request_start_Date) * 24 * 3600) as request_create_seconds,
+(response_end_Date - response_start_Date) * 24 * 3600 as resp_store_seconds,
+(web_Service_end_Date - web_service_start_Date) * 24 * 3600 as call_time_seconds,
+request_start_Date, request_end_Date, response_start_Date, response_end_Date, web_service_start_Date, web_Service_end_Date, request_xml_payload, response_xml_payload */
+from priv_st.PRIV_SERVICE_PERF_LOG where last_updt_date > sysdate -10-- and to_char(last_updt_date,'MM/DD/YYYY HH24:MI') = '12/20/2021 10:02' -- and session_id in (738288105369) -- request_Start_date > to_date('11222021115900','MMDDYYYYHH24MISS')
+--and priv_service_perf_log_id > 569416
+and operation_label = 'NADA Auto Market Value'
+--and session_user_name is not null
+--and session_id in (738338007299)
+--and context_object_id in ( 739301434599,739301433799)
+--and request_start_date < to_date('11222021155500','MMDDYYYYHH24MISS')
+--group by operation_label
+and exception_stack_trace is not null
+order by PRIV_SERVICE_PERF_LOG_id desc
+
+
 --Perf log & External queue job status
 select * from priv_st.priv_service_perf_log pf
 where upper(pf.operation_label) like '%RISKMETER_REPORT_QUEUE%' --RISKMETER
 --where pf.context_object_id = 765722355429
 order by REQUEST_START_DATE desc
+
 
 --External_queue_job_status
 select * from priv_st.external_queue_job_status eqjs
@@ -141,7 +175,78 @@ where eqjs.queue_name = 'policy-carrier-rules-sapiens-queue'
 and eqjs.household_id = 67522679419
 order by eqjs.created_date desc;
 --------------------------------------------------------------------------------
+--TPR Report
+select * from priv_st.ods_tpr_report_order tpr
+where tpr.tpr_report_type = 'AutoCLUE'
+and tpr.household_id = 346490377219
+order by TPR_ORDER_DATE desc-- check AutoClue reports for household
+--------------------------------------------------------------------------------
+-----Scheduler script-----
+begin                                 
+    dbms_scheduler.create_job
+    (
+      job_name      =>  'lc360_1',
+      job_type      =>  'PLSQL_BLOCK',
+      job_action    =>  'begin priv_api.pkg_pv_custom_backfill_03.sp_lc360_sf_inspection(747724801579, 747724801579); end;',
+      start_date    =>  sysdate,
+      enabled       =>  true,
+      auto_drop     =>  false,
+      comments      =>  'one-time backfill ');
+      commit;
+end;
+/
 
+
+select * from priv_st.system_log sl where sl.user_session_id = 720795761879 and sl.program_name = 'PKG_PV_CUSTOM_BACKFILL.covid_object_change' order by sl.log_sequence desc
+
+select * from priv_st.system_log sl where sl.user_session_id = 720795761879 order by sl.log_sequence desc
+
+select STATE,  dba.start_date, dba.end_date from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date
+
+select * from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date --PA009746008
+
+--------------------------------------------------------------------------------
+/* Query to determine how many incident rules are associated with the specified BV and product */
+select bv.business_variable_id,
+       bv.business_variable_name,
+       t.tpr_incident_counter_id,
+       t.tpr_incident_rule_id,
+       t.active_tf,
+       t.context_object_type_id,
+       t.count_business_variable_path,
+       t.date_business_variable_id,
+       t.last_pd_filing_id,
+       t.pd_filing_id,
+       t.pd_product_id,
+       r.b_rule_desc_text,
+       r.b_rule_pseudo_code
+  from priv_md.tpr_incident_counter t
+ inner join priv_md.rule r
+    on t.tpr_incident_rule_id = r.rule_id
+ inner join priv_md.business_variable bv
+    on bv.business_variable_id = priv_api.pkg_os_bv.fn_bv_path_bv_get(t.count_business_variable_path)
+ where (t.pd_product_id is null or t.pd_product_id = 62221)
+      --and lower(r.b_rule_desc_text) like '%incident type%'
+   and r.b_rule_pseudo_code like '%21854601%' --Incident Points Discarded - Indicator
+   and t.last_pd_filing_id is null
+ order by t.tpr_incident_rule_id asc
+ --------------------------------------------------------------------------------
+--CLOB updada example
+declare
+v_clob_txt clob := 
+'The policy referenced below has been Canceled. Please contact your underwriter or PURE Broker Services at (888) 813-PURE (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. Member: Phillips Peter Account: 87890043419 Policy #: CO032595900';
+begin
+update priv_st.long_string set long_string_text = v_clob_txt where long_string_id = 49700606;
+end; 
+/
+declare
+v_clob_txt clob := 
+'The policy referenced below has been Canceled. Please contact your underwriter or PURE Broker Services at (888) 813-PURE (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. Member: Phillips Peter Account: 87890043419 Policy #: HO032355900';
+begin
+update priv_st.long_string set long_string_text = v_clob_txt where long_string_id = 49700255;
+end;
+/
+--------------------------------------------------------------------------------
 
 select distinct(OPERATION_LABEL) from priv_st.priv_service_perf_log
 
@@ -249,6 +354,22 @@ select * from priv_md.pr_coverage_relationship pr where pr.pr_coverage_relations
 select * from priv_st.pr_coverage_factor_premium pcf where pcf.policy_id = 749525107739
 select * from priv_st.dragon_transaction_stats dts where dts.policy_image_id = 753900707676 order by COVERAGE_NAME asc
 select * from priv_md.pr_lookup_mapping pr where pr.pr_lookup_mapping_id = 5347314
+
+-----------------------------------------------------------------------------------------------
+--updated query for debugging actions within a User session. This makes use of the new DRAGON_TRANSACTION_ACTIONS table introduced in Core6.
+select
+    dt.transaction_id, dt.transaction_timestamp, dt.elapsed_time,
+    dt.context_object_id,
+    dt.context_action_id, (select a.action_name from priv_md.action a where a.action_id = dt.context_action_id) as context_action,
+    dt.requested_action_id, (select a.action_name from priv_md.action a where a.action_id = dt.requested_action_id) as requested_action,
+    dta.timestamp, dta.elapsed_time, dta.outcome_id,
+    dta.action_id, (select a.action_name from priv_md.action a where a.action_id = dta.action_id) as dta_action
+from
+    priv_st.dragon_transaction dt
+    left join priv_st.dragon_transaction_actions dta on dta.transaction_id = dt.transaction_id
+where dt.user_session_id = 750640864839
+order by dt.transaction_id, dta.timestamp;
+-----------------------------------------------------------------------------------------------
 
 select * from priv_md.pc_coverage pc
 where pc.pd_product_id = 73833
@@ -448,21 +569,6 @@ select * from priv_md.pd_filing pf where pf.pd_filing_id = 127483337
 select pkg_cs_address_standardization.fn_is_bad_location(1, 1, 461979540819) from dual;
 select * from VW_BOR_AGENCY_TRANSFER_DETAILS WHERE POLICY_ID = 751287619666
 
------------------------------------------------------------------------------------------------
---updated query for debugging actions within a User session. This makes use of the new DRAGON_TRANSACTION_ACTIONS table introduced in Core6.
-select
-    dt.transaction_id, dt.transaction_timestamp, dt.elapsed_time,
-    dt.context_object_id,
-    dt.context_action_id, (select a.action_name from priv_md.action a where a.action_id = dt.context_action_id) as context_action,
-    dt.requested_action_id, (select a.action_name from priv_md.action a where a.action_id = dt.requested_action_id) as requested_action,
-    dta.timestamp, dta.elapsed_time, dta.outcome_id,
-    dta.action_id, (select a.action_name from priv_md.action a where a.action_id = dta.action_id) as dta_action
-from
-    priv_st.dragon_transaction dt
-    left join priv_st.dragon_transaction_actions dta on dta.transaction_id = dt.transaction_id
-where dt.user_session_id = 750640864839
-order by dt.transaction_id, dta.timestamp;
------------------------------------------------------------------------------------------------
 
 select * from priv_st.action_integration_log ail where AIL.POLICY_TRANSACTION_POLICY_ID = 461939313339
 
