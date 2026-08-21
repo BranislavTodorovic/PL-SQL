@@ -1,4 +1,5 @@
 ---------------------------------------------------------------------------------------------------------
+--Bundle check
 select BUNDLE_DATE, DEPLOY_BUNDLE_LABEL, DEPLOY_PREDECESSOR, DEPLOY_SVN_BRANCH, DEPLOYED_DATE, DEPLOY_STATUS, DEPLOY_REGION, USERID, DEPLOY_TYPE, PRD_TARGET_DATE
 from priv_st.deploy_log where deploy_bundle_label like '%DP2_PAG_%' order by bundle_date asc
 
@@ -26,6 +27,37 @@ begin pkg_os_object_io.sp_object_bv_set(1,
                                         null); --value you want to set for bv
 end;
 
+--rule test
+select pkg_os_expression.fn_evaluate_expression(1, 1, 745862495586 , 11237037 ) from dual;
+
+
+--lookup list text get - lookup_list_id, enum from list
+select pkg_os_lookup.fn_lookup_list_text_get(5050401, f.feature_jurisdiction_set_id) from dual;
+
+select pkg_os_lookup.fn_lookup_list_short_text_get( 5323105, 2) from dual;
+---------------------------------------------------------------------------------------------------------
+
+--user_source, all_source check
+select * from user_source where lower(text) like '%dm_household_named_insured%'
+select * from user_source where text like '%13466737%'
+select * from all_source where text like '%13466737%'
+
+---------------------------------------------------------------------------------------------------------
+--months between check
+select months_between(
+         to_date('05/17/2024' , 'MM/DD/YYYY'),
+         to_date('01/28/1952' , 'MM/DD/YYYY')
+       ) / 12 as age_years
+from dual;
+
+
+--checking dates between days
+select (abs(trunc(months_between(to_date('20211102000100', 'YYYYMMDDHH24MISS'), to_date('2023112500100' , 'YYYYMMDDHH24MISS')) *30))) num_of_days from dual
+
+
+--checking dates between months
+select abs(trunc(months_between(to_date('20230730000100', 'YYYYMMDDHH24MISS'), to_date('20221103000100', 'YYYYMMDDHH24MISS')))) num_of_months from dual
+---------------------------------------------------------------------------------------------------------
 
 --Delete objects
 declare
@@ -135,17 +167,6 @@ and (select count(1)
      and OVERRIDDEN = 2) = 0
 ---------------------------------------------------------------------------------------------------------
 
-select * from priv_md.tr_object_bv_transform tr where tr.tr_object_bv_transform_id = 14150437
-
-select * from ODS_MGU_LOCATION_COVERAGE where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
-
-select * from priv_st.action_integration_log where lower(AI_NAME) like '%predictive analytics%'
-select distinct(AI_NAME) from priv_st.action_integration_log
-
-select * from priv_st.action_integration_log where POLICY_TRANSACTION_POLICY_ID = 745929171986 order by AI_LOG_TIMESTAMP desc
-
---------------------------------------------------------------------------------
-
 select * /* PRIV_SERVICE_PERF_LOG_ID,operation_label,session_user_name, (response_end_Date - request_start_Date) * 24 * 3600 as total_time_seconds,trim((request_end_Date - request_start_Date) * 24 * 3600) as request_create_seconds,
 (response_end_Date - response_start_Date) * 24 * 3600 as resp_store_seconds,
 (web_Service_end_Date - web_service_start_Date) * 24 * 3600 as call_time_seconds,
@@ -174,6 +195,10 @@ select * from priv_st.external_queue_job_status eqjs
 where eqjs.queue_name = 'policy-carrier-rules-sapiens-queue'
 and eqjs.household_id = 67522679419
 order by eqjs.created_date desc;
+
+select * from priv_st.external_queue_job_status 
+where upper(queue_name) like '%RISKMETER_REPORT_QUEUE%' 
+order by job_id desc;
 --------------------------------------------------------------------------------
 --TPR Report
 select * from priv_st.ods_tpr_report_order tpr
@@ -201,7 +226,7 @@ select * from priv_st.system_log sl where sl.user_session_id = 720795761879 and 
 
 select * from priv_st.system_log sl where sl.user_session_id = 720795761879 order by sl.log_sequence desc
 
-select STATE,  dba.start_date, dba.end_date from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date
+select STATE, dba.start_date, dba.end_date from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date
 
 select * from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date --PA009746008
 
@@ -246,27 +271,40 @@ begin
 update priv_st.long_string set long_string_text = v_clob_txt where long_string_id = 49700255;
 end;
 /
---------------------------------------------------------------------------------
 
-select distinct(OPERATION_LABEL) from priv_st.priv_service_perf_log
-
-select * from vw_er_input_values
+------------------------------------------------------------------------------------------
+--Feature
 select * from priv_md.feature f where f.feature_id in (1100037, 1073737)
 and lower(f.feature_name) like '%external rating%'
 select * from priv_md.feature_version fv where fv.feature_id = 1083437
 select * from priv_md.feature_version fv where fv.feature_version_id = 1230837
-select * from external_queue_job_status eqj
-select * from priv_st.external_queue_job_status where upper(queue_name) like '%RISKMETER_REPORT_QUEUE%' order by job_id desc;
 
-select * from priv_api.AGENT_RESOURCES
-select * from priv_st.dragon_license dl WHERE DL.LICENSE_ID = 852589658
-select * from priv_md.action a where a.action_id = 1303039
+select f.feature_id,
+       f.feature_name,
+       f.feature_jurisdiction_set_id,
+       pkg_os_lookup.fn_lookup_list_text_get(5050401, f.feature_jurisdiction_set_id) as jurisdiction,
+       fv.feature_description,
+       fv.nb_effective_date,
+       fv.renewal_effective_date
+  from priv_md.feature f
+ inner join priv_md.feature_version fv
+    on f.feature_id = fv.feature_id
+ --where lower(substr(f.feature_name, 1, 15)) like '%external rating%'
+  where lower(f.feature_name) = 'external rating'
+   and f.feature_insurance_line_id = 21 -- Collection LOB
+ order by fv.nb_effective_date, fv.renewal_effective_date asc;
+ 
+ select pkg_cs_feature.sp_check_feature_version(1, 1, 462692813289, 'Home Surplus ROL' , 'v1' ) from dual;
+ 
+ select pkg_cs_feature.sp_check_feature_version(1, 1, pkg_pv_custom_rules_02.fn_get_prev_basic_trans(1, 1, 461937862399), 'BCEG', 'v1') from dual;
+------------------------------------------------------------------------------------------
+--system attribute
 select * from system_attribute_values where ATTRIBUTE_value like '%https://api.purehnw.dev/spatial-v2/corelogic%'
 select * from system_attribute_values where ATTRIBUTE_value like '%https://qa-api.aws.purehnw.app/drglocationsearch-can-v2/import%'
------------------------------------------------------------------------------------------------------
 select * from priv_api.system_attribute_values sav where upper(sav.ATTRIBUTE_NAME) like '%PRIV_DRAGON_URL_DOCUMENT%'
 select * from priv_api.system_attribute_values where ATTRIBUTE_NAME like '%PRIV_GOOGLE_MAPS%'
 select * from priv_st.installation
+
 --update priv_st.installation set LOGGING_LEVEL = 4 where INSTALLATION_ID = 9
 select * from priv_st.actor_type_set_values at where at.actor_type_set_id = 10105
 
@@ -301,7 +339,7 @@ and ar.last_pd_filing_id is null
 /*UPDATE dap_job_submission d
 SET d.wait_page_timeout = 120 --should be 120 for both
 WHERE d.dap_job_submission_id in (41539, 40939)*/
------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 --System log
 delete from priv_st.system_log where user_session_id = 462825996789
 
@@ -316,7 +354,7 @@ where sl.user_session_id = 750793624516
 order by PROGRAM_NAME asc
 
 select * from priv_st.system_log where user_session_id = 462348969729 order by LOG_SEQUENCE desc
------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 
 --External Rating log check
 select * from priv_st.sl_service_op_log sso
@@ -336,14 +374,14 @@ and sso.time_stamp >= trunc(sysdate) - 1
 order by sso.TIME_STAMP desc
 
 select * from priv_api.VW_RETRY_CALL_TO_COHERENT
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 --AJAX refresh
 begin pkg_os_wf_client_rules.sp_ui_rule_input_update(); commit; end;
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 --Lock session
 select * from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --PolicyQuote/PTP
 delete from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --PolicyQuote/PTP
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 --Rating tables
 select * from priv_md.pc_coverage pc where pc.pc_coverage_id = 1731237
 select * from priv_md.pr_coverage_factor pf where pf.pr_coverage_factor_id in (5038133)
@@ -355,7 +393,27 @@ select * from priv_st.pr_coverage_factor_premium pcf where pcf.policy_id = 74952
 select * from priv_st.dragon_transaction_stats dts where dts.policy_image_id = 753900707676 order by COVERAGE_NAME asc
 select * from priv_md.pr_lookup_mapping pr where pr.pr_lookup_mapping_id = 5347314
 
------------------------------------------------------------------------------------------------
+--join dragon_policy, dragon_policy_trx, and pr_coverage_premium
+select dpt.policy_number,
+       cp.policy_id,
+       dpt.policy_trx_eff_date,
+       dpt.policy_trx_type_id,
+       dpt.policy_trx_seq_num,
+       dpt.policy_trx_status_name,
+       cp.premium_amount
+  from priv_st.dragon_policy       dp,
+       priv_st.dragon_policy_trx   dpt,
+       priv_st.pr_coverage_premium cp
+where dp.policy_id = dpt.policy_id
+   and dpt.policy_image_id = cp.policy_id
+   and dp.line_of_business = 13105 --20
+   --and dp.policy_jurisdiction_id = 33
+   and dpt.policy_trx_eff_date >= to_date('09142026000001', 'mmddyyyyhh24miss') --to_date('01/15/2026', 'MM/DD/YYYY')
+   and (dpt.policy_trx_status_id = 106 or dpt.policy_trx_status_id = 35502)
+   and cp.pc_coverage_id = 220206 --356321
+   and cp.premium_amount <= 0
+
+------------------------------------------------------------------------------------------
 --updated query for debugging actions within a User session. This makes use of the new DRAGON_TRANSACTION_ACTIONS table introduced in Core6.
 select
     dt.transaction_id, dt.transaction_timestamp, dt.elapsed_time,
@@ -369,31 +427,45 @@ from
     left join priv_st.dragon_transaction_actions dta on dta.transaction_id = dt.transaction_id
 where dt.user_session_id = 750640864839
 order by dt.transaction_id, dta.timestamp;
------------------------------------------------------------------------------------------------
 
-select * from priv_md.pc_coverage pc
-where pc.pd_product_id = 73833
-and (pc.active_tf is null or pc.active_tf = 'T')
-and pc.last_pd_filing_id is null
-and nvl(pc.pc_coverage_selected_cond_id, 0) <> 199002
-and trim(pc.pc_coverage_name) is not null
-order by pc.pc_premium_calculation_order asc
+--NEW QUERY with ACTION_RESULT_STATE - updated query for debugging actions within a User session
+select dt.transaction_id,
+       dt.transaction_timestamp,
+       dt.elapsed_time as transaction_elapsed_time,
+       dt.context_object_id,
+       dt.context_action_id,
+       ca.action_name as context_action,
+       dt.requested_action_id,
+       ra.action_name as requested_action,
+       dta.timestamp as action_timestamp,
+       dta.elapsed_time as action_elapsed_time,
+       dta.outcome_id,
+       dta.action_id,
+       da.action_name as dta_action,
+       ars.current_object_state_id,
+       ars.result_object_state_id
+  from priv_st.dragon_transaction dt
+  left join priv_st.dragon_transaction_actions dta
+    on dta.transaction_id = dt.transaction_id
+  left join priv_md.action ca
+    on ca.action_id = dt.context_action_id
+  left join priv_md.action ra
+    on ra.action_id = dt.requested_action_id
+  left join priv_md.action da
+    on da.action_id = dta.action_id
+  left join priv_md.action_result_state ars
+    on ars.action_id = dta.action_id
+ where dt.user_session_id = 775876571709
+ order by dt.transaction_id, dta.timestamp;
+ 
+--History check with object ID
+select osh.* , os.object_state_display_name, usr.user_full_name
+from priv_st.object_state_history osh
+join priv_md.object_state os on osh.state_id = os.object_state_id
+join priv_st.dragon_user usr on osh.session_user_id = usr.user_id
+where osh.object_id = 773943236609 order by osh.state_change_date desc;
+------------------------------------------------------------------------------------------
 
-/*update priv_md.pr_lookup_mapping
-SET MANDATORY_TF = 'T' --'T'
-WHERE PR_LOOKUP_MAPPING_ID = 5347314*/
-
-select * from VW_ER_COVERAGE_CODES
-
-select * from vw_er_input_values
-
-
-SELECT column_name, nullable
-FROM all_tab_columns
-WHERE table_name = 'OBJECT'
-AND owner = 'PRIV_ST'
-AND column_name = 'OBJECT_TYPE_ID';
-------------------------------------------------------------------------
 --Dap tables
 SELECT * FROM dap_job_submission d where d.dap_job_submission_id in (41539, 40939)
 select * from priv_st.async_batch ab where ab.asynch_batch_type_id = 11533
@@ -415,7 +487,8 @@ select * from priv_st.async_job_status ajs
 where ajs.async_job_definition_id in (97037, 96937, 96837)
 --where ajs.job_description = 'External Rating Details Request - Renewal'
 order by ajs.job_date desc
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+
 --Inner Join BV + OBJECT_BV_VALUE table
 select * from object_bv_value ooo, business_variable bv1
 where ooo.business_variable_id = bv1.business_variable_id 
@@ -444,34 +517,88 @@ and ((dpt.POLICY_TRX_EFF_DATE >= to_date('05/01/2025' , 'MM/DD/YYYY') and dpt.po
 or (dpt.POLICY_TRX_EFF_DATE >= to_date('07/01/2025' , 'MM/DD/YYYY') and dpt.policy_trx_type_id = 8)) --Renewal
 and dp.AGENCY_NUMBER <> 14673900 --System Validation LLC
 
-SELECT 
-    a.table_name AS child_table,
-    a.column_name AS child_column,
-    c.owner AS parent_owner,
-    c.table_name AS parent_table,
-    c.column_name AS parent_column
-FROM 
-    all_cons_columns a
-    JOIN all_constraints b ON a.constraint_name = b.constraint_name
-    JOIN all_cons_columns c ON b.r_constraint_name = c.constraint_name
-WHERE 
-    b.constraint_type = 'R'  -- 'R' stands for Referential (Foreign Key)
-    AND a.constraint_name = 'RISK_MODEL_BLO_3184337_FK';
+------------------------------------------------------------------------------------------
+--BV trace
+insert into priv_st.dragon_variable_trace(TRACE_ID, TRACE_DRAGON_VARIABLE_ID, USER_SESSION_ID, COMPOSITE_SEARCH_KEY, TRACE_LOGGING_LEVEL, TRACE_LOGGING_LEVEL_DESC)
+values (29643514, 29643514 ,null, null, 4, 'PPC Override');
 
-select distinct(JOB_ACTION_OUTCOME_ID) from priv_st.async_job_status
-select * from priv_md.action a where a.action_id in (1334439)
-select * from priv_md.outcome o where o.outcome_id in (78239, 77539)
-select * from RENEWAL_RETRY_RATING_VW
-select * from transaction_control_load
-select * from priv_st.async_batch AB WHERE AB.ASYNCH_BATCH_TYPE_ID = 607
+------------------------------------------------------------------------------------------
+--DRAGON LICENSE
+insert into priv_st.dragon_license (LICENSE_ID, LICENSE_STATE, LICENSE_NUMBER, LICENSE_CODE, LICENSE_CATEGORY, LICENSE_TYPE, PARTNER_ID, LICENSE_HOLDER_NAME, ADMITTED_OR_SURPLUS, 
+LICENSE_OVERRIDE_STATUS_TEXT, PARENT_OBJECT_ID, LICENSE_OBJECT_STATUS_TEXT, LICENSE_CATEGORY_ENUM, LICENSE_CODE_ENUM, LICENSE_TYPE_ENUM, LICENSE_STATE_ENUM, LICENSE_EXPIRATION_DATE )
+values (8786546565, 'WY', '674563485', 'Property/Casualty', 'Agent', 'Agency', 3151879419, 'MULTI STATE AGENCY', 'Admitted and Surplus' , 'Override active' , 3151879419, ' Active', 
+1, 5, 1, 52, to_date('20270805 12:01:00 AM' , 'YYYYMMDD HH24:MI:SS') );
 
-select pkg_os_reference_lookup.fn_get_lookup_text ( 1 , 1 ,  462674797279    , 29294407 ,  2 ) from dual;
-select * from priv_md.pd_attribute_type pa where lower(pa.pd_attribute_type_name) like '%other%'
-SELECT * FROM priv_st.async_job_status ajs
-WHERE ajs.async_job_definition_id IN (14017, 14317, 15117, 14417)
-AND ajs.job_start_date >= SYSDATE - 100
-ORDER BY ajs.job_start_date, AJSDIFF DESC;
-------------------------------------------------------------------------
+select * from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active' AND DL.LICENSE_STATE = 'CA'
+
+select * from priv_api.AGENT_RESOURCES
+select * from priv_st.dragon_license dl WHERE DL.LICENSE_ID = 852589658
+select * from priv_md.action a where a.action_id = 1303039
+
+------------------------------------------------------------------------------------------
+--DRAGON_USER, DRAHGON_USER_GROUP, DRAGON_PARTNER, DRAGON_HOUSEHOLD
+select * from DRAGON_HOUSEHOLD where HOUSEHOLD_ID = 461548968339
+select * from priv_st.dragon_policy where POLICY_NUMBER = 'PA201246605'
+SELECT * FROM PPU_FL_0_PR_CARRIER WHERE JURISDICTION_SET = 12
+select * from VW_USER_GROUP_ASSIGNMENT where USER_FULL_NAME = 'National Team' and USER_FULL_NAME = 'Katrina Benge'
+
+select * from priv_st.DRAGON_USER WHERE lower(USER_FULL_NAME) like '%branislav%'
+select * from priv_st.DRAGON_USER WHERE PURE_PROGRAMS_USER_ONLY is not null
+select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_ACTOR_TYPE_NAME = 'Underwriting Technician' and DRAGON_USER_NAME = 'National Team'
+select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_NAME = 'National Team' --DRAGON_USER_ID
+select * from priv_st.DRAGON_USER where USER_FULL_NAME = 'National Team' --USER_ID
+select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_GROUP_NAME = 'OneshieldSmoke'
+
+
+SELECT DUAG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC, DU.ACTOR_TYPE_ID, DP.UW_TECHNICIAN,
+--DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
+upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
+FROM DRAGON_USER_ASSOCIATED_GROUP DUAG
+join DRAGON_USER DU
+on DUAG.DRAGON_USER_ID = DU.USER_ID
+left join DRAGON_PARTNER DP
+on DP.UW_TECHNICIAN = DU.USER_FULL_NAME
+where USER_FULL_NAME = 'National Team'
+
+
+select * from VW_USER_GROUP_ASSIGNMENT --where user_full_name = 'National Team'
+where DRAGON_USER_GROUP_ID is not null 
+and ACTOR_TYPE_ID in (14206,5) 
+and (USER_STATUS_ID = to_number(75) or USER_STATUS_ID is null) 
+and (PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY<>('Yes'))
+and USER_FULL_NAME like '%National Team%'
+
+
+SELECT DUG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC,
+DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU.ACTOR_TYPE_ID, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
+upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
+FROM DRAGON_USER_ASSOCIATED_GROUP DUG
+join DRAGON_USER DU
+on DUG.DRAGON_USER_ID = DU.USER_ID
+left join DRAGON_SURPLUS_UW_HISTORY dsuh
+on dug.dragon_user_group_id=dsuh.uw_group_id and dsuh.end_date is null;
+
+
+select * from priv_st.dragon_partner 
+where UW_GROUP_ID is not null 
+and UW_GROUP_NAME is not null 
+and UW_PRIMARY is not null 
+and UW_SERVICE_ASSOC is not null
+
+select * from priv_st.dragon_partner where UW_TECHNICIAN is null --= 'National Team'
+select * from priv_st.dragon_partner where UW_GROUP_NAME = 'Underwriting Group 1' --'Underwriting Group 2'
+select * from priv_api.system_attribute_values where ATTRIBUTE_value like '%https://%'
+
+select USER_ID, USER_FULL_NAME, PURE_PROGRAMS_USER_ONLY, PARTNER_OBJECT_STATUS, UW_TECHNICIAN
+from DRAGON_PARTNER DP
+join DRAGON_USER DU
+on DU.USER_FULL_NAME = DP.UW_TECHNICIAN
+where ( PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY <> 'Yes')
+and USER_FULL_NAME = 'National Team'
+and PARTNER_OBJECT_STATUS = 'Approved'
+and UW_TECHNICIAN = 'National Team'
+
+-------------------------------------------------------------------------------------------------------------
 
 select * from priv_st.POLK_VEHICLE
 select distinct(LICENSE_STATE) from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active'
@@ -488,23 +615,6 @@ select * from priv_api.AGENT_RESOURCES
 select * from priv_md.risk_model_block_setup r where r.pd_product_id = 73833
 select * from priv_st.dragon_license dl WHERE DL.LICENSE_ID = 852589658
 select * from priv_md.xml_schema_attribute x where x.xml_schema_attribute_id = 197024637
-
---BV trace
-insert into priv_st.dragon_variable_trace(TRACE_ID, TRACE_DRAGON_VARIABLE_ID, USER_SESSION_ID, COMPOSITE_SEARCH_KEY, TRACE_LOGGING_LEVEL, TRACE_LOGGING_LEVEL_DESC)
-values (29643514, 29643514 ,null, null, 4, 'PPC Override');
-
-------------------------------------------------------------
---DRAGON LICENSE
-insert into priv_st.dragon_license (LICENSE_ID, LICENSE_STATE, LICENSE_NUMBER, LICENSE_CODE, LICENSE_CATEGORY, LICENSE_TYPE, PARTNER_ID, LICENSE_HOLDER_NAME, ADMITTED_OR_SURPLUS, 
-LICENSE_OVERRIDE_STATUS_TEXT, PARENT_OBJECT_ID, LICENSE_OBJECT_STATUS_TEXT, LICENSE_CATEGORY_ENUM, LICENSE_CODE_ENUM, LICENSE_TYPE_ENUM, LICENSE_STATE_ENUM, LICENSE_EXPIRATION_DATE )
-values (8786546565, 'WY', '674563485', 'Property/Casualty', 'Agent', 'Agency', 3151879419, 'MULTI STATE AGENCY', 'Admitted and Surplus' , 'Override active' , 3151879419, ' Active', 
-1, 5, 1, 52, to_date('20270805 12:01:00 AM' , 'YYYYMMDD HH24:MI:SS') );
-
-select * from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active' AND DL.LICENSE_STATE = 'CA'
-
-------------------------------------
-
-select pkg_cs_feature.sp_check_feature_version( 1   ,   1    ,     462692813289    ,    'Home Surplus ROL' , 'v1' ) from dual;
 
 insert into priv_st.dm_grade_reason(REASON_ID, LOCATION_FULL_ADDRESS, TIV, AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2) 461951916329
 values (4, '673 Alta Vista Dr, Gatlinburg, Tennessee 37738', '14500000', 'Very High', 'F', 'Extreme', 'WILDFIRE', 'EARTHQUAKE'); --PT
@@ -544,6 +654,7 @@ pkg_os_wf_task.sp_action_result_tasks(
 745882269356); --policy quote ID
 end;
 
+------------------------------------
 
 begin pkg_os_object_io.sp_object_bv_set(1, 
                                         1, 
@@ -572,20 +683,15 @@ select * from VW_BOR_AGENCY_TRANSFER_DETAILS WHERE POLICY_ID = 751287619666
 
 select * from priv_st.action_integration_log ail where AIL.POLICY_TRANSACTION_POLICY_ID = 461939313339
 
+select * from VW_ER_COVERAGE_CODES
+select * from vw_er_input_values
+
 -----------------------------------------------------------------------------------------------
 select pkg_cs_functions.fn_bceg_year_exists(1001, 1001, 461937233059, 461937290689) from dual;
 
 select pkg_cs_functions.fn_bceg_exists(1001, 1001, 461937235749, '2012', '04') from dual --461937080919
 
 select pkg_cs_functions.fn_bceg_year_closest_is(1001, 1001, '2012', 461937233059, 461937290689 , '04'  ) from dual --461937080919
-
-select pkg_cs_feature.sp_check_feature_version(1, 
-                                      1, 
-                                      pkg_pv_custom_rules_02.fn_get_prev_basic_trans(1, 
-                                                             1, 
-                                                             461937862399), 
-                                        'BCEG', 
-                                      'v1') from dual;
 
 
 select pkg_pv_custom_rules_01.fn_is_bceg_yrcompare_tf (1 , 1 , 461935938559 ) from dual;
@@ -595,8 +701,6 @@ select pkg_pv_custom_rules_02.fn_default_bceg_renewal (1 , 1 , 461935938559 ) fr
 select pkg_pv_custom_rules_01.fn_bceg_min_yr(1, 1, 461938040879) from dual;
 
 select pkg_cs_functions.fn_bceg_year_closest_get(1, 1, 461936042709, 461937080919) from dual;
-
-select pkg_cs_feature.sp_check_feature_version ( 1 , 1  , 461992186879  , 'Billing Flood and Earthquake' , 'v1' ) from dual;
 
 
 select * from priv_st.lookup_lIST LL where ll.LOOKUP_LIST_ID = 5053501
@@ -608,10 +712,6 @@ select * from priv_st.pd_transaction_set pd where pd.pd_transaction_set_id in (4
 select * from priv_st.pd_property pp where pp.PD_PROPERTY_ID = 467033
 select * from priv_st.pd_property_type ppt where ppt.PD_PROPERTY_TYPE_ID = 27633
 
-select priv_api.pkg_os_expression.fn_evaluate_expression(1, 1, 767552656419, 4960514) from dual; --new transform rule feature --466089064079 466088778249
-select priv_api.pkg_os_expression.fn_evaluate_expression(1, 1, 767239973059, 12331437) from dual; --BCEG old transform rule for FL, SC
-
-select pkg_cs_feature.sp_check_feature_version(  1 ,1 ,  462677967449   , 'Home Surplus ROL' , 'v1' )  from dual;
 
 select * from priv_st.page_layout_cell plc where plc.page_layout_cell_id = 21627535
 select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 752896097339, '27992205.29795214') from dual --_Reference_Head of Household
@@ -623,12 +723,6 @@ select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748829, '2677
 
 select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2379907, 'Auto-At-Fault') from dual; --excess
 select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2380107, 'Auto-At-Fault') from dual; --auto
-
---checking dates between days
-select (abs(trunc(months_between(to_date('20211102000100', 'YYYYMMDDHH24MISS'), to_date('2023112500100' , 'YYYYMMDDHH24MISS')) *30))) num_of_days from dual
-
---checking dates between months
-select abs(trunc(months_between(to_date('20230730000100', 'YYYYMMDDHH24MISS'), to_date('20221103000100', 'YYYYMMDDHH24MISS')))) num_of_months from dual
       
     
 select * from priv_st.ods_tpr_report_order tpr
@@ -690,159 +784,22 @@ select * from priv_api.UW_REASSIGN_SURPLUS_BROKERS
 select * from priv_st.dragon_task where TASK_CREATED_DATE >= trunc(to_date('20210924' , 'YYYYMMDD')) 
 order by TASK_LAST_UPDATED_DATE and TASK_DESCRIPTION like '%services@pureinsurance.com%' 
 
+select * from priv_md.tr_object_bv_transform tr where tr.tr_object_bv_transform_id = 14150437
+
+select * from ODS_MGU_LOCATION_COVERAGE where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
+
+select * from priv_st.action_integration_log where lower(AI_NAME) like '%predictive analytics%'
+select distinct(AI_NAME) from priv_st.action_integration_log
+
+select * from priv_st.action_integration_log where POLICY_TRANSACTION_POLICY_ID = 745929171986 order by AI_LOG_TIMESTAMP desc
+
 select distinct EMAIL_REPLY_TO_ADDRESS from priv_st.email where EMAIL_REPLY_TO_ADDRESS like '%services@pureinsurance.com%'
-select * from priv_st.page_layout_cell where TRANSLATE_TF is not null and CELL_LABEL_RULE_ID is not null
-select * from priv_st.rule where B_RULE_DESC_TEXT like '%PURE High Net Worth Insurance%'
-select * from priv_st.email where REPLY_TO_ADDRESS like lower('%pureinsuraunce.com%')
-select * from priv_st.tr_object_bv_transform
-select * from priv_st.pc_coverage_rule where PC_COVERAGE_RULE_DESC like '%Claims flag set%'
-
-select pkg_os_expression.fn_evaluate_expression( 1, 1, 745862495586 , 11237037 ) from dual;
-
-select * from priv_st.page_layout_block plb where plb.page_layout_block_id = 1225714
-
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 461771730309, '28982406.28982606.28919705') not in (select pd_property_value
-                                                                                                                     from   priv_st.pd_property
-                                                                                                                     where  pd_property_type_id = 28635) from dual;
-
-select distinct TR_OBJECT_TRANSFORM_NAME from priv_st.tr_object_transform where PD_PRODUCT_ID in (65214,90132) and ACTIVE_TF = 'T'
-
-select * from DM_ALL_INCIDENT where PRODUCT_DESC = 'Excess Liability'
-
-select * from PPA_FL_0_INCIDENTS_CONV
-------------------------------------------------------------------------------------------
-select * from DRAGON_HOUSEHOLD where HOUSEHOLD_ID = 461548968339
-select * from priv_st.dragon_policy where POLICY_NUMBER = 'PA201246605'
-SELECT * FROM PPU_FL_0_PR_CARRIER WHERE JURISDICTION_SET = 12
-select * from VW_USER_GROUP_ASSIGNMENT where USER_FULL_NAME = 'National Team' and USER_FULL_NAME = 'Katrina Benge'
-
-select * from priv_st.DRAGON_USER WHERE lower(USER_FULL_NAME) like '%branislav%'
-select * from priv_st.DRAGON_USER WHERE PURE_PROGRAMS_USER_ONLY is not null
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_ACTOR_TYPE_NAME = 'Underwriting Technician' and DRAGON_USER_NAME = 'National Team'
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_NAME = 'National Team' --DRAGON_USER_ID
-select * from priv_st.DRAGON_USER where USER_FULL_NAME = 'National Team' --USER_ID
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_GROUP_NAME = 'OneshieldSmoke'
-
-----------------------------------------
-SELECT DUAG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC, DU.ACTOR_TYPE_ID, DP.UW_TECHNICIAN,
---DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
-upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
-FROM DRAGON_USER_ASSOCIATED_GROUP DUAG
-join DRAGON_USER DU
-on DUAG.DRAGON_USER_ID = DU.USER_ID
-left join DRAGON_PARTNER DP
-on DP.UW_TECHNICIAN = DU.USER_FULL_NAME
-where USER_FULL_NAME = 'National Team'
-----------------------------------------
-select * from VW_USER_GROUP_ASSIGNMENT --where user_full_name = 'National Team'
-where DRAGON_USER_GROUP_ID is not null 
-and ACTOR_TYPE_ID in (14206,5) 
-and (USER_STATUS_ID = to_number(75) or USER_STATUS_ID is null) 
-and (PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY<>('Yes'))
-and USER_FULL_NAME like '%National Team%'
-----------------------------------------
-SELECT DUG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC,
-DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU.ACTOR_TYPE_ID, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
-upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
-FROM DRAGON_USER_ASSOCIATED_GROUP DUG
-join DRAGON_USER DU
-on DUG.DRAGON_USER_ID = DU.USER_ID
-left join DRAGON_SURPLUS_UW_HISTORY dsuh
-on dug.dragon_user_group_id=dsuh.uw_group_id and dsuh.end_date is null;
-----------------------------------------
-select * from DRAGON_USER_ASSOCIATED_GROUP
-select * from DRAGON_USER
-
-select * from VW_USER_GROUP_ASSIGNMENT
-where DRAGON_USER_GROUP_ID = 4214008219 
-and ACTOR_TYPE_ID in (14206, 5) 
-and (USER_STATUS_ID = to_number(75) or USER_STATUS_ID is null) 
-and (PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY<>('Yes'))
-
-select * from priv_st.dragon_partner where UW_GROUP_ID is not null and UW_GROUP_NAME is not null and UW_PRIMARY is not null and UW_SERVICE_ASSOC is not null
-
-select * from priv_st.dragon_partner where UW_TECHNICIAN is null --= 'National Team'
-select * from priv_st.dragon_partner where UW_GROUP_NAME = 'Underwriting Group 1' --'Underwriting Group 2'
-select * from priv_api.system_attribute_values where ATTRIBUTE_value like '%https://%'
-
-select USER_ID, USER_FULL_NAME, PURE_PROGRAMS_USER_ONLY, PARTNER_OBJECT_STATUS, UW_TECHNICIAN
-from DRAGON_PARTNER DP
-join DRAGON_USER DU
-on DU.USER_FULL_NAME = DP.UW_TECHNICIAN
-where ( PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY <> 'Yes')
-and USER_FULL_NAME = 'National Team'
-and PARTNER_OBJECT_STATUS = 'Approved'
-and UW_TECHNICIAN = 'National Team'
-
-select * from priv_st.dragon_partner where UW_TECHNICIAN <> 'National Team' and PARTNER_OBJECT_STATUS = ' Approved'
-select * from priv_md.feature f 
-inner join priv_md.feature_version fv
-on f.feature_id = fv.feature_id
-where f.feature_name = 'Home Surplus ROL'
-select * from priv_md.feature_version fv where fv.
--------------------------------------------------------------------------------------------------------------
-
-select * from user_source where lower(text) like '%dm_household_named_insured%'
-select * from user_source where text like '%13466737%'
-select * from all_source where text like '%13466737%'
-
-select pkg_os_lookup.fn_lookup_list_short_text_get( 5323105, 2) from dual;
-
-select * from priv_st.pc_coverage_rule where pc_coverage_rule_id = 973914 --IOWA state /* PD_PRODUCT_ID = 90132 */
-select * from priv_st.pc_coverage_rule where PC_COVERAGE_RULE_DESC like '%Please refer to Company for approval and or processing of your pending transaction.%'
-
-select distinct PC_COVERAGE_RULE_DESC from priv_st.pc_coverage_rule where PD_PRODUCT_ID = 65214 and LAST_PD_FILING_ID is null order by PC_COVERAGE_RULE_DESC asc
-select * from priv_st.pc_coverage_rule where PC_COVERAGE_RULE_DESC like '%Please provide details on why and secure driver%'
-
-select * from priv_st.action_integration_log where ai_log_id = 16602370
-
-----------------------------------------------------------------------------------------------------------------------------
-
---ALL AUTO products
-select * from priv_st.pc_coverage_rule where PC_COVERAGE_RULE_DESC like '%1 DUI in last 3 years%' 
-and PD_PRODUCT_ID in (62322, 71833, 62724, 66514, 71314, 69014, 59014, 64329, 60217, 57405, 60619, 71414, 90132, 62925,
-65714, 65214, 67514, 69714, 66814, 70614, 60016, 69814, 64127, 68214, 67314, 64731, 66314, 69514, 67714, 70814, 58812,
-68414, 58411, 62221, 70214, 64530, 64914, 66114, 63926, 60418, 58208, 69414, 71014, 60720, 68014, 70014, 70414, 68814,
-68614, 67014, 65814) 
 
 
---ALL HOMEOWNERS products
-select * from priv_st.pc_coverage_rule where PC_COVERAGE_RULE_DESC like '%Total Insured Value exceeds $10Million.  Please review the account, reinsurance is required.%' 
-and PD_PRODUCT_ID in (62422, 71733, 62624, 66414, 68914, 58913, 64228, 60117, 60519, 71114, 87536, 62825, 65614, 65014, 67414,
-69614, 66714, 70514, 59916, 62523, 64027, 68114, 67214, 64631, 66214, 69214, 67614, 70714, 58612, 68314, 58311, 62121, 70114,
-64430, 64832, 66014, 63026, 60318, 69314, 70914, 59215, 67914, 69914, 70314, 68714, 68514, 66914, 65914, 71214, 58008, 57005) 
-------------------------------------------------------------
 
-/* declare
-cellid integer;
-cursor cur_plcid is (
-select plc.page_layout_cell_id, plc.page_layout_block_id, pd.pd_product_name, plc.CELL_LABEL, plb.BLOCK_NAME from page_layout_cell plc
-join page_layout_block plb on plc.page_layout_block_id = plb.page_layout_block_id
-join pd_product pd on plb.pd_product_id = pd.pd_product_id
-where pd.pd_product_insurance_line_id = 19
-and plc.LAST_PD_FILING_ID is null
-and plb.LAST_PD_FILING_ID is null
-and plc.CELL_DISPLAY_TF = 'T'
-and plc.CELL_ACTOR_SET is null
-and plb.block_name in ('optional flood coverage', 'optional coverage', 'property information', 'excess flood left 2', 'excess flood right 2' )
-and plc.CELL_FRONT_END_SOURCE_TYPE_ID <> 8 ) order by pd.pd_product_name asc;
---and plb.block_display_filter_rule_id is null);
 
-begin
-for r in cur_plcid
-loop
--- dbms_output.put_line('*********************');
---dbms_output.put_line(r.page_layout_cell_id);
-select count (*)into cellid
-from endt_change_cells ecc
-where ecc.page_layout_cell_id = r.page_layout_cell_id;
---dbms_output.put_line(cellid);
-if nvl(cellid , 1)= 0
-then dbms_output.put_line(r.page_layout_cell_id ||' ' || r.CELL_LABEL || ' ' || r.pd_product_name || ' ' || r.page_layout_block_id );
-end if;
-cellid := 0;
-end loop;
-end; */
+
+
 
 
 
