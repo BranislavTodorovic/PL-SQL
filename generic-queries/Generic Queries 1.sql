@@ -459,11 +459,28 @@ select dt.transaction_id,
  order by dt.transaction_id, dta.timestamp;
  
 --History check with object ID
-select osh.* , os.object_state_display_name, usr.user_full_name
-from priv_st.object_state_history osh
-join priv_md.object_state os on osh.state_id = os.object_state_id
-join priv_st.dragon_user usr on osh.session_user_id = usr.user_id
-where osh.object_id = 773943236609 order by osh.state_change_date desc;
+select osh.object_id,
+       osh.transaction_id,
+       osh.user_session_id,
+       osh.session_user_id,
+       osh.object_type_id,
+       osh.outcome_id,
+       o.outcome_name,
+       osh.prior_state_id,
+       osh.state_id,
+       os.object_state_display_name,
+       osh.requested_action_id,
+       a.action_name,
+       a.action_native_command,
+       osh.state_change_date,
+       usr.user_full_name
+  from priv_st.object_state_history osh
+  join priv_md.object_state os on osh.state_id = os.object_state_id
+  join priv_st.dragon_user usr on osh.session_user_id = usr.user_id
+  join priv_md.outcome o on o.outcome_id = osh.outcome_id
+  join priv_md.action a on a.action_id = osh.requested_action_id
+ where osh.object_id = 789956893809 --PT ID for post NB trx, PolicyQuote ID for NB
+ order by osh.state_change_date desc;
 ------------------------------------------------------------------------------------------
 
 --Dap tables
