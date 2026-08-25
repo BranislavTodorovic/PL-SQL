@@ -484,6 +484,7 @@ select osh.object_id,
 ------------------------------------------------------------------------------------------
 
 --Dap tables
+
 SELECT * FROM dap_job_submission d where d.dap_job_submission_id in (41539, 40939)
 select * from priv_st.async_batch ab where ab.asynch_batch_type_id = 11533
 SELECT * from priv_md.async_job_definition aj where lower(aj.async_job_definition_name) like '%external rating%'
@@ -504,6 +505,12 @@ select * from priv_st.async_job_status ajs
 where ajs.async_job_definition_id in (97037, 96937, 96837)
 --where ajs.job_description = 'External Rating Details Request - Renewal'
 order by ajs.job_date desc
+
+--Dap job monitor by session id
+select * from priv_st.dap_scheduler_monitor_audit d
+where d.session_id = 790223116669
+--and d.async_job_definition_id in (90539, 91139, 91939)
+order by d.creation_timestamp desc
 ------------------------------------------------------------------------------------------
 
 --Inner Join BV + OBJECT_BV_VALUE table
