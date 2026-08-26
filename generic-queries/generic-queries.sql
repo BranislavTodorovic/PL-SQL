@@ -1,10 +1,10 @@
 ---------------------------------------------------------------------------------------------------------
---Bundle check
-select BUNDLE_DATE, DEPLOY_BUNDLE_LABEL, DEPLOY_PREDECESSOR, DEPLOY_SVN_BRANCH, DEPLOYED_DATE, DEPLOY_STATUS, DEPLOY_REGION, USERID, DEPLOY_TYPE, PRD_TARGET_DATE
-from priv_st.deploy_log where deploy_bundle_label like '%DP2_PAG_%' order by bundle_date asc
+--bundle check
+select bundle_date, deploy_bundle_label, deploy_predecessor, deploy_svn_branch, deployed_date, deploy_status, deploy_region, userid, deploy_type, prd_target_date
+from priv_st.deploy_log where deploy_bundle_label like '%dp2_pag_%' order by bundle_date asc
 
-select * from priv_st.deploy_log where deploy_bundle_label like '%LLI_ERATE_AUTO_NC_%' order by bundle_date asc
-select DEPLOY_BUNDLE_LABEL, PRD_TARGET_DATE from priv_st.deploy_log where deploy_bundle_label like '%LLI_ERATE_AUTO_NC_31%'
+select * from priv_st.deploy_log where deploy_bundle_label like '%lli_erate_auto_nc_%' order by bundle_date asc
+select deploy_bundle_label, prd_target_date from priv_st.deploy_log where deploy_bundle_label like '%lli_erate_auto_nc_31%'
 ---------------------------------------------------------------------------------------------------------
 --bv_path test
 select pkg_os_object_io.fn_object_bv_path_get(1, 
@@ -12,12 +12,12 @@ select pkg_os_object_io.fn_object_bv_path_get(1,
                                               462775772269, --object id
                                               '31408737') from dual; --bv path id
 
---get text value from VLL                                     
+--get text value from vll                                     
 select pkg_os_reference_lookup.fn_get_lookup_text(1, 
                                                   1, 
                                                   462775772269, --object id
                                                   28920705, --bv id
-                                                  2) from dual;  --value from VLL                                           
+                                                  2) from dual;  --value from vll                                           
 
 --bv set
 begin pkg_os_object_io.sp_object_bv_set(1,
@@ -45,21 +45,20 @@ select * from all_source where text like '%13466737%'
 ---------------------------------------------------------------------------------------------------------
 --months between check
 select months_between(
-         to_date('05/17/2024' , 'MM/DD/YYYY'),
-         to_date('01/28/1952' , 'MM/DD/YYYY')
+         to_date('05/17/2024' , 'mm/dd/yyyy'),
+         to_date('01/28/1952' , 'mm/dd/yyyy')
        ) / 12 as age_years
 from dual;
 
 
 --checking dates between days
-select (abs(trunc(months_between(to_date('20211102000100', 'YYYYMMDDHH24MISS'), to_date('2023112500100' , 'YYYYMMDDHH24MISS')) *30))) num_of_days from dual
-
+select (abs(trunc(months_between(to_date('20211102000100', 'yyyymmddhh24miss'), to_date('2023112500100' , 'yyyymmddhh24miss')) *30))) num_of_days from dual
 
 --checking dates between months
-select abs(trunc(months_between(to_date('20230730000100', 'YYYYMMDDHH24MISS'), to_date('20221103000100', 'YYYYMMDDHH24MISS')))) num_of_months from dual
+select abs(trunc(months_between(to_date('20230730000100', 'yyyymmddhh24miss'), to_date('20221103000100', 'yyyymmddhh24miss')))) num_of_months from dual
 ---------------------------------------------------------------------------------------------------------
 
---Delete objects
+--delete objects
 declare
 
 type grades_arr is varray(20) of number;
@@ -70,7 +69,7 @@ begin
 
 ids_arr := grades_arr(754800262546,
             754800262566,
-            754800262586); --Object ids that should be deleted
+            754800262586); --object ids that should be deleted
 
 for i in 1.. ids_arr.count_loop
 priv_api.pkg_os_object.sp_object_delete(1, 1, null, ids_arr(i), null, null, false);
@@ -82,19 +81,19 @@ end;
 --   Name: Bran Todorovic
 --   Date: 05/29/2026
 --   Project: Production Support
---   Rally ID: DE108896 - PURE Online Error
+--   Rally ID: DE108896 - pure online error
 --	 Comment: Updating policy expiration date
 
---HOT FIX script example
+--hot fix script example
 declare
-v_dm char(1) := 'T';
+v_dm char(1) := 't';
 begin
-priv_api.pkg_os_object_io.sp_object_bv_set(1, 1, 739793584009, 499, to_char( to_date ('20270214000100','YYYYMMDDHH24MISS'), 'YYYYMMDDHH24MISS') ); -- expiration date
+priv_api.pkg_os_object_io.sp_object_bv_set(1, 1, 739793584009, 499, to_char( to_date ('20270214000100','yyyymmddhh24miss'), 'yyyymmddhh24miss') ); -- expiration date
 priv_api.pkg_os_datamart.sp_datamart_update_row(1, 1, 739793584009, v_dm); 
 end;
 /
 ---------------------------------------------------------------------------------------------------------
---Query to get XML attributes related to cell names on UI, BV IDs, per Product ID
+--query to get xml attributes related to cell names on ui, bv ids, per product id
 with xsa_data as
  (select xsa.xml_schema_attribute_id,
          xsa.xml_schema_object_id,
@@ -113,12 +112,12 @@ with xsa_data as
     from priv_md.xml_schema_attribute xsa
     left join priv_md.xml_schema_object xso
       on xso.xml_schema_object_id = xsa.xml_schema_object_id
-   where xsa.xml_schema_id = 52537), --PolicyDWC XML Schema ID
+   where xsa.xml_schema_id = 52537), --policydwc xml schema id
 plc_data as
  (select priv_api.pkg_os_bv.fn_bv_path_bv_get(plc.cell_business_variable_path) as business_variable_id,
          max(plc.b_cell_label) as cell_label_name
     from priv_md.page_layout_cell plc
-   where plc.pd_product_id = 71533 --Domestic Workers Comp
+   where plc.pd_product_id = 71533 --domestic workers comp
    group by priv_api.pkg_os_bv.fn_bv_path_bv_get(plc.cell_business_variable_path))
 select xsa.xml_schema_attribute_id,
        xsa.xml_schema_object_id,
@@ -140,7 +139,7 @@ select xsa.xml_schema_attribute_id,
     on plc.business_variable_id = xsa.business_variable_id
  order by xsa.xml_schema_attribute_id;
 ---------------------------------------------------------------------------------------------------------
---Renewal ReRate view
+--renewal rerate view
 select * from priv_st.object o where o.object_id = 746199132599
     select count(*)
    -- into v_count
@@ -148,70 +147,70 @@ select * from priv_st.object o where o.object_id = 746199132599
     where v.policy_image_id = 123232;
 
 --view example
-select * from POLICY_RENEWAL_RERATE_VW
+select * from policy_renewal_rerate_vw
 select dtx.policy_image_id
 from priv_st.dragon_policy dp
 inner join priv_st.dragon_policy_trx dtx on dtx.policy_id = dp.policy_id
 inner join priv_st.dragon_household dh on dh.household_id = dp.household_id
-AND  dtx.policy_trx_status_id = 15402 --PolicyTransactionCreated
-and  dtx.POLICY_TRX_TYPE_ID = 8 --Renewal
-AND dp.policy_state_id = 71 --Active
-and dp.line_of_business not in (13733,13833,14537,14037) --HS,ES,Primary Flood, COC
-and dh.household_country = 'United States'
-and (extract(year from dtx.POLICY_TRX_EFF_DATE) = extract(year from sysdate) or extract(year from dtx.POLICY_TRX_EFF_DATE - 1) = extract(year from sysdate - 1))
-and trunc(dtx.POLICY_TRX_EFF_DATE) between trunc(sysdate - 45) and trunc(sysdate + 45)    
+and  dtx.policy_trx_status_id = 15402 --policytransactioncreated
+and  dtx.policy_trx_type_id = 8 --renewal
+and dp.policy_state_id = 71 --active
+and dp.line_of_business not in (13733,13833,14537,14037) --hs,es,primary flood, coc
+and dh.household_country = 'united states'
+and (extract(year from dtx.policy_trx_eff_date) = extract(year from sysdate) or extract(year from dtx.policy_trx_eff_date - 1) = extract(year from sysdate - 1))
+and trunc(dtx.policy_trx_eff_date) between trunc(sysdate - 45) and trunc(sysdate + 45)    
 and (select count(1) 
      from priv_st.dm_underwriting_referral 
      where parent_object_id = dtx.policy_image_id
-     and UW_TRIGGER_RELEVANT = 1
-     and OVERRIDDEN = 2) = 0
+     and uw_trigger_relevant = 1
+     and overridden = 2) = 0
 ---------------------------------------------------------------------------------------------------------
 
-select * /* PRIV_SERVICE_PERF_LOG_ID,operation_label,session_user_name, (response_end_Date - request_start_Date) * 24 * 3600 as total_time_seconds,trim((request_end_Date - request_start_Date) * 24 * 3600) as request_create_seconds,
-(response_end_Date - response_start_Date) * 24 * 3600 as resp_store_seconds,
-(web_Service_end_Date - web_service_start_Date) * 24 * 3600 as call_time_seconds,
-request_start_Date, request_end_Date, response_start_Date, response_end_Date, web_service_start_Date, web_Service_end_Date, request_xml_payload, response_xml_payload */
-from priv_st.PRIV_SERVICE_PERF_LOG where last_updt_date > sysdate -10-- and to_char(last_updt_date,'MM/DD/YYYY HH24:MI') = '12/20/2021 10:02' -- and session_id in (738288105369) -- request_Start_date > to_date('11222021115900','MMDDYYYYHH24MISS')
+select * /* priv_service_perf_log_id,operation_label,session_user_name, (response_end_date - request_start_date) * 24 * 3600 as total_time_seconds,trim((request_end_date - request_start_date) * 24 * 3600) as request_create_seconds,
+(response_end_date - response_start_date) * 24 * 3600 as resp_store_seconds,
+(web_service_end_date - web_service_start_date) * 24 * 3600 as call_time_seconds,
+request_start_date, request_end_date, response_start_date, response_end_date, web_service_start_date, web_service_end_date, request_xml_payload, response_xml_payload */
+from priv_st.priv_service_perf_log where last_updt_date > sysdate -10-- and to_char(last_updt_date,'mm/dd/yyyy hh24:mi') = '12/20/2021 10:02' -- and session_id in (738288105369) -- request_start_date > to_date('11222021115900','mmddyyyyhh24miss')
 --and priv_service_perf_log_id > 569416
-and operation_label = 'NADA Auto Market Value'
+and operation_label = 'nada auto market value'
 --and session_user_name is not null
 --and session_id in (738338007299)
 --and context_object_id in ( 739301434599,739301433799)
---and request_start_date < to_date('11222021155500','MMDDYYYYHH24MISS')
+--and request_start_date < to_date('11222021155500','mmddyyyyhh24miss')
 --group by operation_label
 and exception_stack_trace is not null
-order by PRIV_SERVICE_PERF_LOG_id desc
+order by priv_service_perf_log_id desc
 
 
---Perf log & External queue job status
+--perf log & external queue job status
 select * from priv_st.priv_service_perf_log pf
-where upper(pf.operation_label) like '%RISKMETER_REPORT_QUEUE%' --RISKMETER
+where upper(pf.operation_label) like '%riskmeter_report_queue%' --riskmeter
 --where pf.context_object_id = 765722355429
-order by REQUEST_START_DATE desc
+order by request_start_date desc
 
 
---External_queue_job_status
+--external_queue_job_status
 select * from priv_st.external_queue_job_status eqjs
 where eqjs.queue_name = 'policy-carrier-rules-sapiens-queue'
 and eqjs.household_id = 67522679419
 order by eqjs.created_date desc;
 
 select * from priv_st.external_queue_job_status 
-where upper(queue_name) like '%RISKMETER_REPORT_QUEUE%' 
+where upper(queue_name) like '%riskmeter_report_queue%' 
 order by job_id desc;
 --------------------------------------------------------------------------------
---TPR Report
+--tpr report
 select * from priv_st.ods_tpr_report_order tpr
-where tpr.tpr_report_type = 'AutoCLUE'
+where tpr.tpr_report_type = 'autoclue'
 and tpr.household_id = 346490377219
-order by TPR_ORDER_DATE desc-- check AutoClue reports for household
+order by tpr_order_date desc-- check autoclue reports for household
 --------------------------------------------------------------------------------
------Scheduler script-----
+-----scheduler script-----
 begin                                 
     dbms_scheduler.create_job
     (
       job_name      =>  'lc360_1',
-      job_type      =>  'PLSQL_BLOCK',
+      job_type      =>  'plsql_block',
       job_action    =>  'begin priv_api.pkg_pv_custom_backfill_03.sp_lc360_sf_inspection(747724801579, 747724801579); end;',
       start_date    =>  sysdate,
       enabled       =>  true,
@@ -222,16 +221,12 @@ end;
 /
 
 
-select * from priv_st.system_log sl where sl.user_session_id = 720795761879 and sl.program_name = 'PKG_PV_CUSTOM_BACKFILL.covid_object_change' order by sl.log_sequence desc
+select state, dba.start_date, dba.end_date from dba_scheduler_jobs dba where job_name like '%chg_sum5%' order by last_start_date
 
-select * from priv_st.system_log sl where sl.user_session_id = 720795761879 order by sl.log_sequence desc
-
-select STATE, dba.start_date, dba.end_date from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date
-
-select * from dba_scheduler_jobs dba where job_name like '%CHG_SUM5%' order by last_start_date --PA009746008
+select * from dba_scheduler_jobs dba where job_name like '%chg_sum5%' order by last_start_date --pa009746008
 
 --------------------------------------------------------------------------------
-/* Query to determine how many incident rules are associated with the specified BV and product */
+/* query to determine how many incident rules are associated with the specified bv and product */
 select bv.business_variable_id,
        bv.business_variable_name,
        t.tpr_incident_counter_id,
@@ -252,30 +247,32 @@ select bv.business_variable_id,
     on bv.business_variable_id = priv_api.pkg_os_bv.fn_bv_path_bv_get(t.count_business_variable_path)
  where (t.pd_product_id is null or t.pd_product_id = 62221)
       --and lower(r.b_rule_desc_text) like '%incident type%'
-   and r.b_rule_pseudo_code like '%21854601%' --Incident Points Discarded - Indicator
+   and r.b_rule_pseudo_code like '%21854601%' --incident points discarded - indicator
    and t.last_pd_filing_id is null
  order by t.tpr_incident_rule_id asc
  --------------------------------------------------------------------------------
---CLOB updada example
+--clob updada example
 declare
 v_clob_txt clob := 
-'The policy referenced below has been Canceled. Please contact your underwriter or PURE Broker Services at (888) 813-PURE (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. Member: Phillips Peter Account: 87890043419 Policy #: CO032595900';
+'the policy referenced below has been canceled. please contact your underwriter or pure broker services at (888) 813-pure (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. member: phillips peter account: 87890043419 policy #: co032595900';
 begin
 update priv_st.long_string set long_string_text = v_clob_txt where long_string_id = 49700606;
 end; 
 /
 declare
 v_clob_txt clob := 
-'The policy referenced below has been Canceled. Please contact your underwriter or PURE Broker Services at (888) 813-PURE (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. Member: Phillips Peter Account: 87890043419 Policy #: HO032355900';
+'the policy referenced below has been canceled. please contact your underwriter or pure broker services at (888) 813-pure (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. member: phillips peter account: 87890043419 policy #: ho032355900';
 begin
 update priv_st.long_string set long_string_text = v_clob_txt where long_string_id = 49700255;
 end;
 /
 
 ------------------------------------------------------------------------------------------
---Feature
-select * from priv_md.feature f where f.feature_id in (1100037, 1073737)
+--feature
+select * from priv_md.feature f 
+where f.feature_id in (1100037, 1073737)
 and lower(f.feature_name) like '%external rating%'
+
 select * from priv_md.feature_version fv where fv.feature_id = 1083437
 select * from priv_md.feature_version fv where fv.feature_version_id = 1230837
 
@@ -291,106 +288,83 @@ select f.feature_id,
     on f.feature_id = fv.feature_id
  --where lower(substr(f.feature_name, 1, 15)) like '%external rating%'
   where lower(f.feature_name) = 'external rating'
-   and f.feature_insurance_line_id = 21 -- Collection LOB
+   and f.feature_insurance_line_id = 21 -- collection lob
  order by fv.nb_effective_date, fv.renewal_effective_date asc;
  
- select pkg_cs_feature.sp_check_feature_version(1, 1, 462692813289, 'Home Surplus ROL' , 'v1' ) from dual;
+ select pkg_cs_feature.sp_check_feature_version(1, 1, 462692813289, 'home surplus rol' , 'v1' ) from dual;
  
- select pkg_cs_feature.sp_check_feature_version(1, 1, pkg_pv_custom_rules_02.fn_get_prev_basic_trans(1, 1, 461937862399), 'BCEG', 'v1') from dual;
+ select pkg_cs_feature.sp_check_feature_version(1, 1, pkg_pv_custom_rules_02.fn_get_prev_basic_trans(1, 1, 461937862399), 'bceg', 'v1') from dual;
 ------------------------------------------------------------------------------------------
 --system attribute
-select * from system_attribute_values where ATTRIBUTE_value like '%https://api.purehnw.dev/spatial-v2/corelogic%'
-select * from system_attribute_values where ATTRIBUTE_value like '%https://qa-api.aws.purehnw.app/drglocationsearch-can-v2/import%'
-select * from priv_api.system_attribute_values sav where upper(sav.ATTRIBUTE_NAME) like '%PRIV_DRAGON_URL_DOCUMENT%'
-select * from priv_api.system_attribute_values where ATTRIBUTE_NAME like '%PRIV_GOOGLE_MAPS%'
-select * from priv_st.installation
+select * from system_attribute_values where attribute_value like '%https://api.purehnw.dev/spatial-v2/corelogic%'
+select * from system_attribute_values where attribute_value like '%https://qa-api.aws.purehnw.app/drglocationsearch-can-v2/import%'
+select * from priv_api.system_attribute_values sav where upper(sav.attribute_name) like '%priv_dragon_url_document%'
+select * from priv_api.system_attribute_values where attribute_name like '%priv_google_maps%'
 
---update priv_st.installation set LOGGING_LEVEL = 4 where INSTALLATION_ID = 9
-select * from priv_st.actor_type_set_values at where at.actor_type_set_id = 10105
-
-SELECT * FROM TIV_NON_CA_LOC_AGG_MNGMNT_VW WHERE POLICYQUOTE_PRODUCT_ID = 72333 and POLICYQUOTE_ID = 462486810799
-SELECT * FROM AGGREGATION_ZONE_CURRENT_TIV where JURISDICTION_ID = 9 and zone_name = 'CLAY'
-select * from dm_aggregate_management where JURISDICTION_ID = 9
-select * from priv_md.action_button ab where ab.action_button_id = 727901
-SELECT * FROM priv_md.object_datamart od where od.datamart_id = 42037
-select * from priv_md.action_result ar where ar.action_result_id = 1582039 --in (1584939, 1585039, 1621539) --needs to be fixed
-select * from priv_md.action_result ar where ar.action_result_id = 1540137
-select * from priv_md.action_result ar where ar.ACTION_RESULT_ID = 565133 --1543337
-select * from priv_md.action_rule ar where ar.ACTION_RULE_ID in (9921833)
-select * from priv_md.dap_job_submission dp where dp.dap_job_submission_id in (42839, 41539, 40939)
-
-/* UPDATE priv_md.action_result ar
-SET --ar.RESULT_ACTION_ID = 1328237, ----result action: 1318139 1585039
-    ar.RESULT_OBJECT_PATH = '27834002.211405.28555404.27919402490.452.24.629' -- 27834002.211405.28555404.27919402490.452.24.629
-  --  ar.ACTION_RESULT_MESSAGE = null
-WHERE ar.action_result_id = 1543337;  
-
-UPDATE priv_md.action_rule ar
-SET ar.ACTIVE_TF = 'F' --should be T - turned off in priv_md QA
-WHERE ar.action_rule_id = 9921833; */
-
-select distinct(ar.ACTION_ID) 
-from priv_md.action_rule ar 
-where ar.action_rule_type_id = 1
-and ar.pd_product_id in (72333)
-and ar.active_tf = 'T' 
-and ar.last_pd_filing_id is null
-
-/*UPDATE dap_job_submission d
-SET d.wait_page_timeout = 120 --should be 120 for both
-WHERE d.dap_job_submission_id in (41539, 40939)*/
+/*
+--system_attribute script
+begin
+      pkg_os_system_attribute.update_system_attribute('UW_TECH_DEFAULT'
+        ,'PRIVDEV~PRIVQA~PRIVSTAGING~PRIVPROD',
+		https://api-internal-test.pureinsurance.com/analytics-dev/v1/excess~https://api-internal-test.pureinsurance.com/analytics-qa/v1/excess~https://api-internal-test.pureinsurance.com/analytics-stg/v1/excess~https://api-internal.pureinsurance.com/analytics/v1/excess' ,
+        'UW_TECH_NATIONAL' ,
+        'Underwriter Tech National Team default'); --DESCRIPTION OF THE ATTRIBUTE
+  end;
+/
+*/
 ------------------------------------------------------------------------------------------
---System log
+
+--system log
 delete from priv_st.system_log where user_session_id = 462825996789
 
 select * from priv_st.system_log sl
 where sl.user_session_id = 462863078289
---and lower(sl.description) like '%executed action -%' --PolicyQuote ID
+--and lower(sl.description) like '%executed action -%' --policyquote id
 order by sl.log_sequence asc
 
-select distinct upper(PROGRAM_NAME) FROM priv_st.system_log sl
+select distinct upper(program_name) from priv_st.system_log sl
 where sl.user_session_id = 750793624516
---and lower(sl.description) like '%executed action -%' --PolicyQuote ID
-order by PROGRAM_NAME asc
+--and lower(sl.description) like '%executed action -%' --policyquote id
+order by program_name asc
 
-select * from priv_st.system_log where user_session_id = 462348969729 order by LOG_SEQUENCE desc
+select * from priv_st.system_log where user_session_id = 462348969729 order by log_sequence desc
 ------------------------------------------------------------------------------------------
 
---External Rating log check
+--external rating log check
 select * from priv_st.sl_service_op_log sso
-where lower(sso.OPERATION_LABEL) like '%externalrate%'
---and sso.context_object_id = 774367563639 --PolicyQuote/PTP
+where lower(sso.operation_label) like '%externalrate%'
+--and sso.context_object_id = 774367563639 --policyquote/ptp
 and lower(sso.request_xml_payload) like '%<value>personal auto</value>%'
-and sso.request_xml_payload like '%<value>NC</value>%'
-order by sso.TIME_STAMP desc
+and sso.request_xml_payload like '%<value>nc</value>%'
+order by sso.time_stamp desc
 
 select * from priv_st.sl_service_op_log sso
-where lower(sso.OPERATION_LABEL) like '%externalrate%'
---and sso.context_object_id = 463298440479 --PolicyQuote/PTP
+where lower(sso.operation_label) like '%externalrate%'
+--and sso.context_object_id = 463298440479 --policyquote/ptp
 --and lower(sso.request_xml_payload) like '%<value>course</value>%'
---and sso.request_xml_payload like '%<value>KY</value>%'
-and priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, sso.context_object_id, '26806004') = 14037 --COC
+--and sso.request_xml_payload like '%<value>ky</value>%'
+and priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, sso.context_object_id, '26806004') = 14037 --coc
 and sso.time_stamp >= trunc(sysdate) - 1
-order by sso.TIME_STAMP desc
+order by sso.time_stamp desc
 
-select * from priv_api.VW_RETRY_CALL_TO_COHERENT
+select * from priv_api.vw_retry_call_to_coherent
 ------------------------------------------------------------------------------------------
---AJAX refresh
+--ajax refresh
 begin pkg_os_wf_client_rules.sp_ui_rule_input_update(); commit; end;
 ------------------------------------------------------------------------------------------
---Lock session
-select * from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --PolicyQuote/PTP
-delete from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --PolicyQuote/PTP
+--lock session
+select * from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --policyquote/ptp
+delete from priv_st.wf_tmp_object_lock w where w.object_id = 462841238849 --policyquote/ptp
 ------------------------------------------------------------------------------------------
---Rating tables
+--rating tables
 select * from priv_md.pc_coverage pc where pc.pc_coverage_id = 1731237
 select * from priv_md.pr_coverage_factor pf where pf.pr_coverage_factor_id in (5038133)
 select * from priv_md.pr_coverage_factor_value pfv where pfv.pr_coverage_factor_value_id in (9068333)
-select * from priv_md.pc_attribute pc where pc.PC_ATTRIBUTE_ID in (1941237, 1941337, 1941437, 1941537)
+select * from priv_md.pc_attribute pc where pc.pc_attribute_id in (1941237, 1941337, 1941437, 1941537)
 select * from priv_st.pr_coverage_premium
 select * from priv_md.pr_coverage_relationship pr where pr.pr_coverage_relationship_id = 1046835
 select * from priv_st.pr_coverage_factor_premium pcf where pcf.policy_id = 749525107739
-select * from priv_st.dragon_transaction_stats dts where dts.policy_image_id = 753900707676 order by COVERAGE_NAME asc
+select * from priv_st.dragon_transaction_stats dts where dts.policy_image_id = 753900707676 order by coverage_name asc
 select * from priv_md.pr_lookup_mapping pr where pr.pr_lookup_mapping_id = 5347314
 
 --join dragon_policy, dragon_policy_trx, and pr_coverage_premium
@@ -408,13 +382,13 @@ where dp.policy_id = dpt.policy_id
    and dpt.policy_image_id = cp.policy_id
    and dp.line_of_business = 13105 --20
    --and dp.policy_jurisdiction_id = 33
-   and dpt.policy_trx_eff_date >= to_date('09142026000001', 'mmddyyyyhh24miss') --to_date('01/15/2026', 'MM/DD/YYYY')
+   and dpt.policy_trx_eff_date >= to_date('09/14/2026/000001', 'MM/DD/YYYY/HH24MISS') 
    and (dpt.policy_trx_status_id = 106 or dpt.policy_trx_status_id = 35502)
    and cp.pc_coverage_id = 220206 --356321
    and cp.premium_amount <= 0
 
 ------------------------------------------------------------------------------------------
---updated query for debugging actions within a User session. This makes use of the new DRAGON_TRANSACTION_ACTIONS table introduced in Core6.
+--updated query for debugging actions within a user session. this makes use of the new dragon_transaction_actions table introduced in core6.
 select
     dt.transaction_id, dt.transaction_timestamp, dt.elapsed_time,
     dt.context_object_id,
@@ -428,7 +402,7 @@ from
 where dt.user_session_id = 750640864839
 order by dt.transaction_id, dta.timestamp;
 
---NEW QUERY with ACTION_RESULT_STATE - updated query for debugging actions within a User session
+--new query with action_result_state - updated query for debugging actions within a user session
 select dt.transaction_id,
        dt.transaction_timestamp,
        dt.elapsed_time as transaction_elapsed_time,
@@ -445,20 +419,15 @@ select dt.transaction_id,
        ars.current_object_state_id,
        ars.result_object_state_id
   from priv_st.dragon_transaction dt
-  left join priv_st.dragon_transaction_actions dta
-    on dta.transaction_id = dt.transaction_id
-  left join priv_md.action ca
-    on ca.action_id = dt.context_action_id
-  left join priv_md.action ra
-    on ra.action_id = dt.requested_action_id
-  left join priv_md.action da
-    on da.action_id = dta.action_id
-  left join priv_md.action_result_state ars
-    on ars.action_id = dta.action_id
+  left join priv_st.dragon_transaction_actions dta on dta.transaction_id = dt.transaction_id
+  left join priv_md.action ca on ca.action_id = dt.context_action_id
+  left join priv_md.action ra on ra.action_id = dt.requested_action_id
+  left join priv_md.action da on da.action_id = dta.action_id
+  left join priv_md.action_result_state ars on ars.action_id = dta.action_id
  where dt.user_session_id = 775876571709
  order by dt.transaction_id, dta.timestamp;
  
---History check with object ID
+--history check with object id
 select osh.object_id,
        osh.transaction_id,
        osh.user_session_id,
@@ -479,191 +448,248 @@ select osh.object_id,
   join priv_st.dragon_user usr on osh.session_user_id = usr.user_id
   join priv_md.outcome o on o.outcome_id = osh.outcome_id
   join priv_md.action a on a.action_id = osh.requested_action_id
- where osh.object_id = 789956893809 --PT ID for post NB trx, PolicyQuote ID for NB
+ where osh.object_id = 789956893809 --pt id for post nb trx, policyquote id for nb
  order by osh.state_change_date desc;
 ------------------------------------------------------------------------------------------
+--DAP tables
 
---Dap tables
-
-SELECT * FROM dap_job_submission d where d.dap_job_submission_id in (41539, 40939)
+select * from dap_job_submission d where d.dap_job_submission_id in (41539, 40939)
 select * from priv_st.async_batch ab where ab.asynch_batch_type_id = 11533
-SELECT * from priv_md.async_job_definition aj where lower(aj.async_job_definition_name) like '%external rating%'
+select * from priv_md.async_job_definition aj where lower(aj.async_job_definition_name) like '%external rating%'
 
-select (AJS.JOB_START_DATE - AJS.JOB_DATE) * 86400 as DIFF, AJS.* 
+select (ajs.job_start_date - ajs.job_date) * 86400 as diff, ajs.* 
 from priv_st.async_job_status ajs
 inner join priv_md.async_job_definition aj
 on aj.async_job_definition_id = ajs.async_job_definition_id
-and aj.action_id = 619246 --Dap_AsyncJobProcess_Java_Command
+and aj.action_id = 619246 --dap_asyncjobprocess_java_command
 --where ajs.async_job_definition_id in (91139, 90539, 91939)
 --and ajs.job_object_id = 748562682879 --748562682879
-and ajs.job_date >= TO_DATE('2025-03-14 05:00', 'YYYY-MM-DD HH24:MI')
-AND ajs.job_date < TO_DATE('2025-03-14 07:00', 'YYYY-MM-DD HH24:MI')
---AND lower(ajs.job_description) like '%external rating%'
+and ajs.job_date >= to_date('2025-03-14 05:00', 'yyyy-mm-dd hh24:mi')
+and ajs.job_date < to_date('2025-03-14 07:00', 'yyyy-mm-dd hh24:mi')
+--and lower(ajs.job_description) like '%external rating%'
 order by ajs.job_date desc
 
 select * from priv_st.async_job_status ajs
 where ajs.async_job_definition_id in (97037, 96937, 96837)
---where ajs.job_description = 'External Rating Details Request - Renewal'
+--where ajs.job_description = 'external rating details request - renewal'
 order by ajs.job_date desc
 
---Dap job monitor by session id
+--dap job monitor by session id
 select * from priv_st.dap_scheduler_monitor_audit d
 where d.session_id = 790223116669
 --and d.async_job_definition_id in (90539, 91139, 91939)
 order by d.creation_timestamp desc
 ------------------------------------------------------------------------------------------
 
---Inner Join BV + OBJECT_BV_VALUE table
+--inner join bv + object_bv_value table
 select * from object_bv_value ooo, business_variable bv1
 where ooo.business_variable_id = bv1.business_variable_id 
 --and ooo.object_id in (462356174169, 462356174209, 462327408609)
-and bv1.business_variable_name like '%_IN'
+and bv1.business_variable_name like '%_in'
 
 select * from business_variable bv1
-where bv1.business_variable_name like '%_IN'
+where bv1.business_variable_name like '%_in'
 --and ooo.object_id in (462356174169, 462356174209, 462327408609)
---and bv1.business_variable_name like '%_IN'
+--and bv1.business_variable_name like '%_in'
 order by bv1.business_variable_id desc
 
 select * from priv_md.business_variable bv where bv.business_variable_id in (28026805)
 select * from priv_md.rule r where r.rule_id = 12915139
-select * from priv_st.risk_model_block_setup r where r.pd_product_id = 73833 and r.LAST_PD_FILING_ID is null
-SELECT * FROM priv_md.outcome o where o.outcome_id = 75739
-select * from priv_st.dragon_policy where AGENCY_NUMBER = 14673900
+select * from priv_st.risk_model_block_setup r where r.pd_product_id = 73833 and r.last_pd_filing_id is null
+select * from priv_md.outcome o where o.outcome_id = 75739
+select * from priv_st.dragon_policy where agency_number = 14673900
 
-select DISTINCT(dp.policy_number)
+select distinct(dp.policy_number)
 from priv_st.dragon_policy_trx dpt
 inner join priv_st.dragon_policy dp
 on dpt.policy_id = dp.policy_id
-where dpt.POLICY_TRX_STATUS_ID = 106 --Processed
-and dp.POLICY_LINES = 'Home Surplus Lines - California'
-and ((dpt.POLICY_TRX_EFF_DATE >= to_date('05/01/2025' , 'MM/DD/YYYY') and dpt.policy_trx_type_id in (9, 4, 5099)) --NB, Endorsement, NB Rewrite
-or (dpt.POLICY_TRX_EFF_DATE >= to_date('07/01/2025' , 'MM/DD/YYYY') and dpt.policy_trx_type_id = 8)) --Renewal
-and dp.AGENCY_NUMBER <> 14673900 --System Validation LLC
+where dpt.policy_trx_status_id = 106 --processed
+and dp.policy_lines = 'home surplus lines - california'
+and ((dpt.policy_trx_eff_date >= to_date('05/01/2025' , 'mm/dd/yyyy') and dpt.policy_trx_type_id in (9, 4, 5099)) --nb, endorsement, nb rewrite
+or (dpt.policy_trx_eff_date >= to_date('07/01/2025' , 'mm/dd/yyyy') and dpt.policy_trx_type_id = 8)) --renewal
+and dp.agency_number <> 14673900 --system validation llc
 
 ------------------------------------------------------------------------------------------
---BV trace
-insert into priv_st.dragon_variable_trace(TRACE_ID, TRACE_DRAGON_VARIABLE_ID, USER_SESSION_ID, COMPOSITE_SEARCH_KEY, TRACE_LOGGING_LEVEL, TRACE_LOGGING_LEVEL_DESC)
-values (29643514, 29643514 ,null, null, 4, 'PPC Override');
+--bv trace
+insert into priv_st.dragon_variable_trace(trace_id, trace_dragon_variable_id, user_session_id, composite_search_key, trace_logging_level, trace_logging_level_desc)
+values (29643514, 29643514 ,null, null, 4, 'ppc override');
 
 ------------------------------------------------------------------------------------------
---DRAGON LICENSE
-insert into priv_st.dragon_license (LICENSE_ID, LICENSE_STATE, LICENSE_NUMBER, LICENSE_CODE, LICENSE_CATEGORY, LICENSE_TYPE, PARTNER_ID, LICENSE_HOLDER_NAME, ADMITTED_OR_SURPLUS, 
-LICENSE_OVERRIDE_STATUS_TEXT, PARENT_OBJECT_ID, LICENSE_OBJECT_STATUS_TEXT, LICENSE_CATEGORY_ENUM, LICENSE_CODE_ENUM, LICENSE_TYPE_ENUM, LICENSE_STATE_ENUM, LICENSE_EXPIRATION_DATE )
-values (8786546565, 'WY', '674563485', 'Property/Casualty', 'Agent', 'Agency', 3151879419, 'MULTI STATE AGENCY', 'Admitted and Surplus' , 'Override active' , 3151879419, ' Active', 
-1, 5, 1, 52, to_date('20270805 12:01:00 AM' , 'YYYYMMDD HH24:MI:SS') );
+--dragon license
+insert into priv_st.dragon_license (license_id, license_state, license_number, license_code, license_category, license_type, partner_id, license_holder_name, admitted_or_surplus, 
+license_override_status_text, parent_object_id, license_object_status_text, license_category_enum, license_code_enum, license_type_enum, license_state_enum, license_expiration_date )
+values (8786546565, 'wy', '674563485', 'property/casualty', 'agent', 'agency', 3151879419, 'multi state agency', 'admitted and surplus' , 'override active' , 3151879419, ' active', 
+1, 5, 1, 52, to_date('20270805 12:01:00 am' , 'yyyymmdd hh24:mi:ss') );
 
-select * from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active' AND DL.LICENSE_STATE = 'CA'
+select * from dragon_license dl where dl.admitted_or_surplus = 'admitted and surplus' and dl.license_object_status_text = 'active' and dl.license_state = 'ca'
 
-select * from priv_api.AGENT_RESOURCES
-select * from priv_st.dragon_license dl WHERE DL.LICENSE_ID = 852589658
+select * from priv_api.agent_resources
+select * from priv_st.dragon_license dl where dl.license_id = 852589658
 select * from priv_md.action a where a.action_id = 1303039
 
 ------------------------------------------------------------------------------------------
---DRAGON_USER, DRAHGON_USER_GROUP, DRAGON_PARTNER, DRAGON_HOUSEHOLD
-select * from DRAGON_HOUSEHOLD where HOUSEHOLD_ID = 461548968339
-select * from priv_st.dragon_policy where POLICY_NUMBER = 'PA201246605'
-SELECT * FROM PPU_FL_0_PR_CARRIER WHERE JURISDICTION_SET = 12
-select * from VW_USER_GROUP_ASSIGNMENT where USER_FULL_NAME = 'National Team' and USER_FULL_NAME = 'Katrina Benge'
+--dragon_user, dragon_user_group, dragon_partner, dragon_household
+select * from dragon_household where household_id = 461548968339
+select * from priv_st.dragon_policy where policy_number = 'pa201246605'
+select * from ppu_fl_0_pr_carrier where jurisdiction_set = 12
+select * from vw_user_group_assignment where user_full_name = 'national team' and user_full_name = 'katrina benge'
 
-select * from priv_st.DRAGON_USER WHERE lower(USER_FULL_NAME) like '%branislav%'
-select * from priv_st.DRAGON_USER WHERE PURE_PROGRAMS_USER_ONLY is not null
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_ACTOR_TYPE_NAME = 'Underwriting Technician' and DRAGON_USER_NAME = 'National Team'
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_NAME = 'National Team' --DRAGON_USER_ID
-select * from priv_st.DRAGON_USER where USER_FULL_NAME = 'National Team' --USER_ID
-select * from priv_st.DRAGON_USER_ASSOCIATED_GROUP where DRAGON_USER_GROUP_NAME = 'OneshieldSmoke'
-
-
-SELECT DUAG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC, DU.ACTOR_TYPE_ID, DP.UW_TECHNICIAN,
---DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
-upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
-FROM DRAGON_USER_ASSOCIATED_GROUP DUAG
-join DRAGON_USER DU
-on DUAG.DRAGON_USER_ID = DU.USER_ID
-left join DRAGON_PARTNER DP
-on DP.UW_TECHNICIAN = DU.USER_FULL_NAME
-where USER_FULL_NAME = 'National Team'
+select * from priv_st.dragon_user where lower(user_full_name) like '%branislav%'
+select * from priv_st.dragon_user where pure_programs_user_only is not null
+select * from priv_st.dragon_user_associated_group where dragon_user_actor_type_name = 'underwriting technician' and dragon_user_name = 'national team'
+select * from priv_st.dragon_user_associated_group where dragon_user_name = 'national team' --dragon_user_id
+select * from priv_st.dragon_user where user_full_name = 'national team' --user_id
+select * from priv_st.dragon_user_associated_group where dragon_user_group_name = 'oneshieldsmoke'
 
 
-select * from VW_USER_GROUP_ASSIGNMENT --where user_full_name = 'National Team'
-where DRAGON_USER_GROUP_ID is not null 
-and ACTOR_TYPE_ID in (14206,5) 
-and (USER_STATUS_ID = to_number(75) or USER_STATUS_ID is null) 
-and (PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY<>('Yes'))
-and USER_FULL_NAME like '%National Team%'
+select duag.dragon_user_id,du.user_full_name,status_id user_status_id, status_desc, du.actor_type_id, dp.uw_technician,
+--dragon_user_group_id, dragon_user_group_name, du, dsuh.region_state_id, dsuh.region_state,
+upper(du.user_full_name) user_full_name_upper, du.pure_programs_user_only
+from dragon_user_associated_group duag
+join dragon_user du
+on duag.dragon_user_id = du.user_id
+left join dragon_partner dp
+on dp.uw_technician = du.user_full_name
+where user_full_name = 'national team'
 
 
-SELECT DUG.DRAGON_USER_ID,DU.USER_FULL_NAME,STATUS_ID USER_STATUS_ID, STATUS_DESC,
-DRAGON_USER_GROUP_ID, DRAGON_USER_GROUP_NAME, DU.ACTOR_TYPE_ID, dsuh.REGION_STATE_ID, dsuh.REGION_STATE,
-upper(DU.USER_FULL_NAME) USER_FULL_NAME_UPPER, DU.PURE_PROGRAMS_USER_ONLY
-FROM DRAGON_USER_ASSOCIATED_GROUP DUG
-join DRAGON_USER DU
-on DUG.DRAGON_USER_ID = DU.USER_ID
-left join DRAGON_SURPLUS_UW_HISTORY dsuh
+select * from vw_user_group_assignment --where user_full_name = 'national team'
+where dragon_user_group_id is not null 
+and actor_type_id in (14206,5) 
+and (user_status_id = to_number(75) or user_status_id is null) 
+and (pure_programs_user_only is null or pure_programs_user_only<>('yes'))
+and user_full_name like '%national team%'
+
+
+select dug.dragon_user_id,du.user_full_name,status_id user_status_id, status_desc,
+dragon_user_group_id, dragon_user_group_name, du.actor_type_id, dsuh.region_state_id, dsuh.region_state,
+upper(du.user_full_name) user_full_name_upper, du.pure_programs_user_only
+from dragon_user_associated_group dug
+join dragon_user du
+on dug.dragon_user_id = du.user_id
+left join dragon_surplus_uw_history dsuh
 on dug.dragon_user_group_id=dsuh.uw_group_id and dsuh.end_date is null;
 
 
 select * from priv_st.dragon_partner 
-where UW_GROUP_ID is not null 
-and UW_GROUP_NAME is not null 
-and UW_PRIMARY is not null 
-and UW_SERVICE_ASSOC is not null
+where uw_group_id is not null 
+and uw_group_name is not null 
+and uw_primary is not null 
+and uw_service_assoc is not null
 
-select * from priv_st.dragon_partner where UW_TECHNICIAN is null --= 'National Team'
-select * from priv_st.dragon_partner where UW_GROUP_NAME = 'Underwriting Group 1' --'Underwriting Group 2'
-select * from priv_api.system_attribute_values where ATTRIBUTE_value like '%https://%'
+select * from priv_st.dragon_partner where uw_technician is null --= 'national team'
+select * from priv_st.dragon_partner where uw_group_name = 'underwriting group 1' --'underwriting group 2'
+select * from priv_api.system_attribute_values where attribute_value like '%https://%'
 
-select USER_ID, USER_FULL_NAME, PURE_PROGRAMS_USER_ONLY, PARTNER_OBJECT_STATUS, UW_TECHNICIAN
-from DRAGON_PARTNER DP
-join DRAGON_USER DU
-on DU.USER_FULL_NAME = DP.UW_TECHNICIAN
-where ( PURE_PROGRAMS_USER_ONLY is null or PURE_PROGRAMS_USER_ONLY <> 'Yes')
-and USER_FULL_NAME = 'National Team'
-and PARTNER_OBJECT_STATUS = 'Approved'
-and UW_TECHNICIAN = 'National Team'
+select user_id, user_full_name, pure_programs_user_only, partner_object_status, uw_technician
+from dragon_partner dp
+join dragon_user du
+on du.user_full_name = dp.uw_technician
+where ( pure_programs_user_only is null or pure_programs_user_only <> 'yes')
+and user_full_name = 'national team'
+and partner_object_status = 'approved'
+and uw_technician = 'national team'
 
 -------------------------------------------------------------------------------------------------------------
+--how to check if the rule is matching in higher environments using translation_label table
+select
+r.rule_id,
+(select tl.translation_value from priv_md.translation_label tl where tl.translation_key_id = r.rule_pseudo_code) as pseudo_code,
+(select tl.translation_value from priv_md.translation_label tl where tl.translation_key_id = r.rule_serialized) as rule_serialized,
+(select tl.translation_value from priv_md.translation_label tl where tl.translation_key_id = r.rule_descriptive_text) as rule_desc_text
+from priv_md.rule r
+where r.rule_id = 8403533
 
-select * from priv_st.POLK_VEHICLE
-select distinct(LICENSE_STATE) from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active'
-select * from dragon_license dl where dl.ADMITTED_OR_SURPLUS = 'Admitted and Surplus' and dl.LICENSE_OBJECT_STATUS_TEXT = 'Active' AND DL.LICENSE_STATE = 'AZ'
+--query to join rule and table with rule to extract rule text and bvs inside the rule
+select rm.pd_product_id,
+       r.b_rule_desc_text     as source_rule_text,
+       r1.b_rule_desc_text    as relevent_rule_text,
+       r.b_rule_pseudo_code   as source_rule,
+       r1.b_rule_pseudo_code  as relevent_rule
+  from priv_md.pc_coverage_rule rm
+  left join priv_md.rule r on rm.rule_id = r.rule_id
+  left join priv_md.rule r1 on rm.pc_rule_relevant_rule_id = r1.rule_id
+ where rm.pd_product_id = 57505 --pd product id
+   and rm.last_pd_filing_id is null
+   and (lower(r.b_rule_pseudo_code) like '%30309633%' or lower(r1.b_rule_pseudo_code) like '%30309633%')
+-------------------------------------------------------------------------------------------------------------
+--long string check using feature version id, etc...
+select * from priv_st.long_string ls where ls.long_string_id = 68150367
+-------------------------------------------------------------------------------------------------------------
+--update priv_st.installation set logging_level = 4 where installation_id = 9
+select * from priv_st.installation
 
-SELECT * FROM PRIV_md.variable_path_ref vpr where vpr.variable_path_ref_id in (1003227137)
-SELECT * FROM PRIV_ST.variable_path vp where vp.variable_path_id in (59640937)
-SELECT * FROM PRIV_ST.variable_path_member vpm WHERE VPM.VARIABLE_PATH_MEMBER_ID in (81456637)
 
-SELECT * FROM PRIV_ST.variable_path_member vpm where vpm.VARIABLE_PATH_ID in (59454639, 59454839, 59456439)
-SELECT * FROM PRIV_ST.variable_path_ref vpr where vpr.VARIABLE_PATH_ID in (60648437)
+select * from priv_st.actor_type_set_values at where at.actor_type_set_id = 10105
 
-select * from priv_api.AGENT_RESOURCES
+select * from tiv_non_ca_loc_agg_mngmnt_vw where policyquote_product_id = 72333 and policyquote_id = 462486810799
+select * from aggregation_zone_current_tiv where jurisdiction_id = 9 and zone_name = 'clay'
+select * from dm_aggregate_management where jurisdiction_id = 9
+select * from priv_md.action_button ab where ab.action_button_id = 727901
+select * from priv_md.object_datamart od where od.datamart_id = 42037
+select * from priv_md.action_result ar where ar.action_result_id = 1582039 --in (1584939, 1585039, 1621539) --needs to be fixed
+select * from priv_md.action_result ar where ar.action_result_id = 1540137
+select * from priv_md.action_result ar where ar.action_result_id = 565133 --1543337
+select * from priv_md.action_rule ar where ar.action_rule_id in (9921833)
+select * from priv_md.dap_job_submission dp where dp.dap_job_submission_id in (42839, 41539, 40939)
+
+/* update priv_md.action_result ar
+set --ar.result_action_id = 1328237, ----result action: 1318139 1585039
+    ar.result_object_path = '27834002.211405.28555404.27919402490.452.24.629' -- 27834002.211405.28555404.27919402490.452.24.629
+  --  ar.action_result_message = null
+where ar.action_result_id = 1543337;  
+
+update priv_md.action_rule ar
+set ar.active_tf = 'f' --should be t - turned off in priv_md qa
+where ar.action_rule_id = 9921833; */
+
+select distinct(ar.action_id) 
+from priv_md.action_rule ar 
+where ar.action_rule_type_id = 1
+and ar.pd_product_id in (72333)
+and ar.active_tf = 't' 
+and ar.last_pd_filing_id is null
+
+select * from priv_st.polk_vehicle
+select distinct(license_state) from dragon_license dl where dl.admitted_or_surplus = 'admitted and surplus' and dl.license_object_status_text = 'active'
+select * from dragon_license dl where dl.admitted_or_surplus = 'admitted and surplus' and dl.license_object_status_text = 'active' and dl.license_state = 'az'
+
+select * from priv_md.variable_path_ref vpr where vpr.variable_path_ref_id in (1003227137)
+select * from priv_st.variable_path vp where vp.variable_path_id in (59640937)
+select * from priv_st.variable_path_member vpm where vpm.variable_path_member_id in (81456637)
+
+select * from priv_st.variable_path_member vpm where vpm.variable_path_id in (59454639, 59454839, 59456439)
+select * from priv_st.variable_path_ref vpr where vpr.variable_path_id in (60648437)
+
+select * from priv_api.agent_resources
 select * from priv_md.risk_model_block_setup r where r.pd_product_id = 73833
-select * from priv_st.dragon_license dl WHERE DL.LICENSE_ID = 852589658
+select * from priv_st.dragon_license dl where dl.license_id = 852589658
 select * from priv_md.xml_schema_attribute x where x.xml_schema_attribute_id = 197024637
 
-insert into priv_st.dm_grade_reason(REASON_ID, LOCATION_FULL_ADDRESS, TIV, AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2) 461951916329
-values (4, '673 Alta Vista Dr, Gatlinburg, Tennessee 37738', '14500000', 'Very High', 'F', 'Extreme', 'WILDFIRE', 'EARTHQUAKE'); --PT
+insert into priv_st.dm_grade_reason(reason_id, location_full_address, tiv, aggregation_score, non_cat_grade, cat_score, peril_1, peril_2) 461951916329
+values (4, '673 alta vista dr, gatlinburg, tennessee 37738', '14500000', 'very high', 'f', 'extreme', 'wildfire', 'earthquake'); --pt
 
-insert into priv_st.dm_grade_reason(REASON_ID, HOUSEHOLD_ID, POLICY_TRX_POLICY_ID, LOCATION_FULL_ADDRESS, TIV, AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2)
-values (2, 461918082769, 461940379659, '673 Alta Vista Dr, Gatlinburg, Tennessee 37738', 14500000, 'Very High', 'F', 'Extreme', 'Wildfire', 'Earthquake'); --PolicyQuote
+insert into priv_st.dm_grade_reason(reason_id, household_id, policy_trx_policy_id, location_full_address, tiv, aggregation_score, non_cat_grade, cat_score, peril_1, peril_2)
+values (2, 461918082769, 461940379659, '673 alta vista dr, gatlinburg, tennessee 37738', 14500000, 'very high', 'f', 'extreme', 'wildfire', 'earthquake'); --policyquote
 
-insert into priv_st.dm_grade_reason(REASON_ID, DRAGON_OBJECT_ID, HOUSEHOLD_ID, POLICY_TRX_POLICY_ID, LOCATION_FULL_ADDRESS, TIV, AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2)
-values (1, 461940833009, 461940832859, 461940832789, '670 Alta Vista Dr, Gatlinburg, Tennessee 37734', 15000000, 'High', 'F', 'Moderate', 'Wildfire', 'Earthquake'); --PolicyQuote 461951916329
+insert into priv_st.dm_grade_reason(reason_id, dragon_object_id, household_id, policy_trx_policy_id, location_full_address, tiv, aggregation_score, non_cat_grade, cat_score, peril_1, peril_2)
+values (1, 461940833009, 461940832859, 461940832789, '670 alta vista dr, gatlinburg, tennessee 37734', 15000000, 'high', 'f', 'moderate', 'wildfire', 'earthquake'); --policyquote 461951916329
 
-insert into priv_st.dm_grade_reason(REASON_ID, DRAGON_OBJECT_ID, HOUSEHOLD_ID, POLICY_TRX_POLICY_ID, LOCATION_FULL_ADDRESS, TIV, 
-AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2, GRADE_ORDER_DATE, PROP_TYPE_NAME, LC360_GRADE_IND, REASON)
-values (6, 745855789679  , 745855776099  , 745855775999, '775 Cascade Ave, Oregon City, Oregon 97045', 10500000,
-'N/A', 'C', 'N/A', 'N/A', 'N/A', sysdate, 'Condo', 2, 'Location is not eligible. Refer to building guidelines'); --PolicyQuote 461951916329
+insert into priv_st.dm_grade_reason(reason_id, dragon_object_id, household_id, policy_trx_policy_id, location_full_address, tiv, 
+aggregation_score, non_cat_grade, cat_score, peril_1, peril_2, grade_order_date, prop_type_name, lc360_grade_ind, reason)
+values (6, 745855789679  , 745855776099  , 745855775999, '775 cascade ave, oregon city, oregon 97045', 10500000,
+'n/a', 'c', 'n/a', 'n/a', 'n/a', sysdate, 'condo', 2, 'location is not eligible. refer to building guidelines'); --policyquote 461951916329
 
-insert into priv_st.dm_grade_reason(REASON_ID, HOUSEHOLD_ID, LOCATION_FULL_ADDRESS, TIV, 
-AGGREGATION_SCORE, NON_CAT_GRADE, CAT_SCORE, PERIL_1, PERIL_2, GRADE_ORDER_DATE, PROP_TYPE_NAME, REASON, POLICY_NUMBER)
-values (25, 461927783739, '2970 Elderberry Dr S, Salem, Oregon 97302', 15000000,
-'Extreme', 'F', 'Extreme', 'Wildfire', 'Wildfire', sysdate, 'Homeowner', 'N/A', 'HO118903800'); --PolicyQuote 461951916329
+insert into priv_st.dm_grade_reason(reason_id, household_id, location_full_address, tiv, 
+aggregation_score, non_cat_grade, cat_score, peril_1, peril_2, grade_order_date, prop_type_name, reason, policy_number)
+values (25, 461927783739, '2970 elderberry dr s, salem, oregon 97302', 15000000,
+'extreme', 'f', 'extreme', 'wildfire', 'wildfire', sysdate, 'homeowner', 'n/a', 'ho118903800'); --policyquote 461951916329
 
-select * from priv_st.dm_grade_reason dgr where dgr.dragon_object_id = 745862781366/*dgr.CAT_SCORE in ('5','6') and dgr.NON_CAT_GRADE = 'C'*/
-select * from priv_st.dragon_policy dp where dp.HOUSEHOLD_ID = 774952552019
-select * from priv_st.DRAGON_POLICY_QUOTE dpq where dpq.policyquote_id = 774952551939
+select * from priv_st.dm_grade_reason dgr where dgr.dragon_object_id = 745862781366/*dgr.cat_score in ('5','6') and dgr.non_cat_grade = 'c'*/
+select * from priv_st.dragon_policy dp where dp.household_id = 774952552019
+select * from priv_st.dragon_policy_quote dpq where dpq.policyquote_id = 774952551939
 select * from dragon_risk_location
---update priv_st.dm_grade_reason dgr set dgr.NON_CAT_GRADE = 'C' where dgr.dragon_object_id = 745862781366
+--update priv_st.dm_grade_reason dgr set dgr.non_cat_grade = 'c' where dgr.dragon_object_id = 745862781366
 
 ------------------------------------
 
@@ -675,48 +701,33 @@ pkg_os_wf_task.sp_action_result_tasks(
 1,
 1038333, --action id
 22, --outcome
-745882269356); --policy quote ID
+745882269356); --policy quote id
 end;
 
 ------------------------------------
 
-begin pkg_os_object_io.sp_object_bv_set(1, 
-                                        1, 
-                                        461950044099, --Task Object ID
-                                        27499104, --BV ID
-                                        'The policy referenced below has been Canceled. 
-                                        Please contact your underwriter or PURE Broker Services at (888) 813-PURE (7873) or brokerservices@pureinsurance.com if you have questions or need assistance. 
-                                        Member: Phillips Peter Account: 461940433219 Policy #: HO118864400'); 
-end;
+select * from priv_st.dragon_task dt 
+where dt.task_type = 'underwriting referral - cancellation' 
+order by dt.task_created_date desc
 
-begin pkg_os_object_io.sp_object_bv_set(1, 
-                                        1, 
-                                        462003853659, 
-                                        29836814, 
-                                        null); 
-end;
+select * from priv_st.dragon_task dt
+where dt.task_created_date >= trunc(to_date('20210924' , 'yyyymmdd')) 
+and dt.task_description like '%services@pureinsurance.com%' 
+order by dt.task_last_updated_date 
 
-select * from priv_st.dragon_task dt where dt.TASK_TYPE = 'Underwriting Referral - Cancellation' order by TASK_CREATED_DATE desc--where dt.task_id = 461950044099
-select * from priv_st.long_string ls where ls.long_string_id = 69884533
-select * from priv_st.long_string ls where ls.long_string_id = 68150367
-select * from priv_md.pd_filing pf where pf.pd_filing_id = 127483337
-
-select pkg_cs_address_standardization.fn_is_bad_location(1, 1, 461979540819) from dual;
-select * from VW_BOR_AGENCY_TRANSFER_DETAILS WHERE POLICY_ID = 751287619666
-
-
-select * from priv_st.action_integration_log ail where AIL.POLICY_TRANSACTION_POLICY_ID = 461939313339
-
-select * from VW_ER_COVERAGE_CODES
-select * from vw_er_input_values
+select distinct e.email_reply_to_address
+from priv_st.email e
+where e.email_reply_to_address like '%services@pureinsurance.com%'
 
 -----------------------------------------------------------------------------------------------
+select * from vw_er_coverage_codes
+select * from vw_er_input_values
+
 select pkg_cs_functions.fn_bceg_year_exists(1001, 1001, 461937233059, 461937290689) from dual;
 
 select pkg_cs_functions.fn_bceg_exists(1001, 1001, 461937235749, '2012', '04') from dual --461937080919
 
 select pkg_cs_functions.fn_bceg_year_closest_is(1001, 1001, '2012', 461937233059, 461937290689 , '04'  ) from dual --461937080919
-
 
 select pkg_pv_custom_rules_01.fn_is_bceg_yrcompare_tf (1 , 1 , 461935938559 ) from dual;
 
@@ -726,46 +737,53 @@ select pkg_pv_custom_rules_01.fn_bceg_min_yr(1, 1, 461938040879) from dual;
 
 select pkg_cs_functions.fn_bceg_year_closest_get(1, 1, 461936042709, 461937080919) from dual;
 
+select * from priv_md.pd_filing pf where pf.pd_filing_id = 127483337
 
-select * from priv_st.lookup_lIST LL where ll.LOOKUP_LIST_ID = 5053501
+select pkg_cs_address_standardization.fn_is_bad_location(1, 1, 461979540819) from dual;
+
+select * from vw_bor_agency_transfer_details where policy_id = 751287619666
+
+select * from priv_st.lookup_list ll where ll.lookup_list_id = 5053501
 
 select * from priv_st.action_rule ar where ar.action_rule_id in (836906)
 
+select * from priv_md.action_result_task art
+
 select * from priv_st.pd_transaction_set pd where pd.pd_transaction_set_id in (4805)
 
-select * from priv_st.pd_property pp where pp.PD_PROPERTY_ID = 467033
-select * from priv_st.pd_property_type ppt where ppt.PD_PROPERTY_TYPE_ID = 27633
+select * from priv_st.pd_property pp where pp.pd_property_id = 467033
+select * from priv_st.pd_property_type ppt where ppt.pd_property_type_id = 27633
 
 
 select * from priv_st.page_layout_cell plc where plc.page_layout_cell_id = 21627535
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 752896097339, '27992205.29795214') from dual --_Reference_Head of Household
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214') from dual --Reference_Current ISO Report
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214.29911514') from dual --PPCVal
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214.29965814') from dual --DwellPPC
-select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748829, '26774802.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214') from dual --Reference_reference to PPC report object
+select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 752896097339, '27992205.29795214') from dual --_reference_head of household
+select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214') from dual --reference_current iso report
+select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214.29911514') from dual --ppcval
+select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748779, '28033605.211345.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214.29965814') from dual --dwellppc
+select priv_api.pkg_os_object_io.fn_object_bv_path_get(1, 1, 743067748829, '26774802.29916214.29916014.29919014.29905014.29905914.29906514.29909614.29910214.29918214') from dual --reference_reference to ppc report object
 
 
-select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2379907, 'Auto-At-Fault') from dual; --excess
-select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2380107, 'Auto-At-Fault') from dual; --auto
+select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2379907, 'auto-at-fault') from dual; --excess
+select priv_api.pkg_pv_custom_rules.fn_pure_claim_loss_tf(1, 1, 635842359857, 2380107, 'auto-at-fault') from dual; --auto
       
     
 select * from priv_st.ods_tpr_report_order tpr
-where tpr.tpr_report_type = 'AutoCLUE'
+where tpr.tpr_report_type = 'autoclue'
 and tpr.household_id = 346490377219
-order by TPR_ORDER_DATE desc-- check AutoClue reports for household
+order by tpr_order_date desc-- check autoclue reports for household
 
 
-select * from priv_st.jurisdiction_set where JURISDICTION_SET_ID = 20133
+select * from priv_st.jurisdiction_set where jurisdiction_set_id = 20133
 
 select * from priv_st.dragon_household
 
-select * from priv_st.DM_ALL_INCIDENT
+select * from priv_st.dm_all_incident
 
 select * from priv_st.pd_renewal_mod_rule where pd_renewal_mod_rule_id = 479014
 
-select * from priv_st.pd_initialization_group where INITIALIZATION_GROUP_ID = 692635
+select * from priv_st.pd_initialization_group where initialization_group_id = 692635
 
-select * from priv_st.dragon_policy where policy_number = 'PA198777106'
+select * from priv_st.dragon_policy where policy_number = 'pa198777106'
 
 select * from priv_st.pc_coverage_rule where pc_coverage_rule_id in (2404135, 2403735)
 
@@ -777,21 +795,21 @@ select * from priv_st.page_layout_block where page_layout_block_id = 736607
 
 select * from priv_st.page_layout_cell where page_layout_cell_id = 12425314
 
-select * from priv_st.ODS_TPR_REPORT_ORDER
+select * from priv_st.ods_tpr_report_order
 
-select distinct dpt.POLICY_ID from priv_st.dragon_policy_trx dpt
+select distinct dpt.policy_id from priv_st.dragon_policy_trx dpt
 inner join priv_st.dragon_policy dp
-on dp.policy_id = dpt.POLICY_ID
-where trunc(dpt.POLICY_TRX_IMAGE_EFF_DATE) >= to_date('20220313' , 'YYYYMMDD')
-and trunc(dpt.POLICY_TRX_PROCESS_DATE) < trunc(dpt.POLICY_TRX_IMAGE_EFF_DATE) and dpt.POLICY_TRX_TYPE_ID = 8
-and dp.POLICY_LOB_ID = 19
-and dp.POLICY_JURISDICTION_ID = 16
+on dp.policy_id = dpt.policy_id
+where trunc(dpt.policy_trx_image_eff_date) >= to_date('20220313' , 'yyyymmdd')
+and trunc(dpt.policy_trx_process_date) < trunc(dpt.policy_trx_image_eff_date) and dpt.policy_trx_type_id = 8
+and dp.policy_lob_id = 19
+and dp.policy_jurisdiction_id = 16
 
 select * from priv_st.dragon_policy
 
 select * from priv_st.action_rule where action_rule_id = 11295332
 
-select * from priv_md.pc_coverage where PC_COVERAGE_ID = 1274933
+select * from priv_md.pc_coverage where pc_coverage_id = 1274933
 
 select * from priv_st.rule where rule_id = 12737637
 
@@ -799,27 +817,20 @@ select * from priv_st.pd_filing where pd_filing_id = 105
 
 select * from priv_st.jurisdiction_set where jurisdiction_set_id = 28135
 
-select * from priv_st.action_overload where ACTION_OVERLOAD_ID = 3835
+select * from priv_st.action_overload where action_overload_id = 3835
 
 select * from priv_st.action_validation where action_validation_id in (33514, 57933) 
 
-select * from priv_api.UW_REASSIGN_SURPLUS_BROKERS
-
-select * from priv_st.dragon_task where TASK_CREATED_DATE >= trunc(to_date('20210924' , 'YYYYMMDD')) 
-order by TASK_LAST_UPDATED_DATE and TASK_DESCRIPTION like '%services@pureinsurance.com%' 
+select * from priv_api.uw_reassign_surplus_brokers
 
 select * from priv_md.tr_object_bv_transform tr where tr.tr_object_bv_transform_id = 14150437
 
-select * from ODS_MGU_LOCATION_COVERAGE where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
+select * from ods_mgu_location_coverage where mgu_policy_id = 750957782639 and location_coverage_id = 750957782679 
 
-select * from priv_st.action_integration_log where lower(AI_NAME) like '%predictive analytics%'
-select distinct(AI_NAME) from priv_st.action_integration_log
+select * from priv_st.action_integration_log where lower(ai_name) like '%predictive analytics%'
+select distinct(ai_name) from priv_st.action_integration_log
 
-select * from priv_st.action_integration_log where POLICY_TRANSACTION_POLICY_ID = 745929171986 order by AI_LOG_TIMESTAMP desc
-
-select distinct EMAIL_REPLY_TO_ADDRESS from priv_st.email where EMAIL_REPLY_TO_ADDRESS like '%services@pureinsurance.com%'
-
-
+select * from priv_st.action_integration_log where policy_transaction_policy_id = 745929171986 order by ai_log_timestamp desc
 
 
 
