@@ -279,7 +279,7 @@ select * from priv_md.feature_version fv where fv.feature_version_id = 1230837
 select f.feature_id,
        f.feature_name,
        f.feature_jurisdiction_set_id,
-       pkg_os_lookup.fn_lookup_list_text_get(5050401, f.feature_jurisdiction_set_id) as jurisdiction,
+       pkg_os_lookup.fn_lookup_list_text_get(5050401, f.feature_jurisdiction_set_id) as jurisdiction_name,
        fv.feature_description,
        fv.nb_effective_date,
        fv.renewal_effective_date
@@ -288,8 +288,8 @@ select f.feature_id,
     on f.feature_id = fv.feature_id
  --where lower(substr(f.feature_name, 1, 15)) like '%external rating%'
   where lower(f.feature_name) = 'external rating'
-   and f.feature_insurance_line_id = 21 -- collection lob
- order by fv.nb_effective_date, fv.renewal_effective_date asc;
+   and f.feature_insurance_line_id = 21 -- Collection LOB
+ order by f.feature_jurisdiction_set_id, fv.nb_effective_date, fv.renewal_effective_date asc;
  
  select pkg_cs_feature.sp_check_feature_version(1, 1, 462692813289, 'home surplus rol' , 'v1' ) from dual;
  
@@ -831,6 +831,9 @@ select * from priv_st.action_integration_log where lower(ai_name) like '%predict
 select distinct(ai_name) from priv_st.action_integration_log
 
 select * from priv_st.action_integration_log where policy_transaction_policy_id = 745929171986 order by ai_log_timestamp desc
+
+
+
 
 
 
