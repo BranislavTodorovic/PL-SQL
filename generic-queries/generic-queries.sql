@@ -288,8 +288,8 @@ select f.feature_id,
     on f.feature_id = fv.feature_id
  --where lower(substr(f.feature_name, 1, 15)) like '%external rating%'
   where lower(f.feature_name) = 'external rating'
-   and f.feature_insurance_line_id = 21 -- Collection LOB
- order by f.feature_jurisdiction_set_id, fv.nb_effective_date, fv.renewal_effective_date asc;
+   and f.feature_insurance_line_id = 21 --Excess Liability LOB
+ order by fv.nb_effective_date, fv.renewal_effective_date asc;
  
  select pkg_cs_feature.sp_check_feature_version(1, 1, 462692813289, 'home surplus rol' , 'v1' ) from dual;
  
@@ -592,6 +592,16 @@ and uw_technician = 'national team'
 
 -------------------------------------------------------------------------------------------------------------
 --how to check if the rule is matching in higher environments using translation_label table
+select r.rule_id,
+       (select tl.translation_value
+          from priv_md.translation_label tl
+         where tl.translation_key_id = r.rule_pseudo_code) as pseudo_code,
+       r.rule_serialized,
+       r.rule_descriptive_text as rule_desc_text
+  from priv_md.rule r
+ where r.rule_id = 14048137;
+
+/*
 select
 r.rule_id,
 (select tl.translation_value from priv_md.translation_label tl where tl.translation_key_id = r.rule_pseudo_code) as pseudo_code,
@@ -599,6 +609,7 @@ r.rule_id,
 (select tl.translation_value from priv_md.translation_label tl where tl.translation_key_id = r.rule_descriptive_text) as rule_desc_text
 from priv_md.rule r
 where r.rule_id = 8403533
+*/
 
 --query to join rule and table with rule to extract rule text and bvs inside the rule
 select rm.pd_product_id,
